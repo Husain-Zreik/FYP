@@ -48,16 +48,17 @@ const NAV_LINKS = [
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
   const heroRef = useRef(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
 
-  const mapY       = useTransform(scrollYProgress, [0, 1], ['0%', '-18%'])
-  const mapOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
-  const bgY        = useTransform(scrollYProgress, [0, 1], ['0%', '-10%'])
-  const textY      = useTransform(scrollYProgress, [0, 1], ['0%', '-30%'])
-  const textOpacity= useTransform(scrollYProgress, [0, 0.5], [1, 0])
+  const mapY        = useTransform(scrollYProgress, [0, 1], ['0%', '-18%'])
+  const mapOpacity  = useTransform(scrollYProgress, [0, 0.7], [1, 0])
+  const bgY         = useTransform(scrollYProgress, [0, 1], ['0%', '-10%'])
+  const textY       = useTransform(scrollYProgress, [0, 1], ['0%', '-30%'])
+  const textOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
   return (
     <div className="bg-background overflow-x-hidden">
