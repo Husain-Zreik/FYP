@@ -1,52 +1,56 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── Brand (swap these when final colors are provided) ──────── */
-  --color-primary:            #0F172A;
-  --color-primary-hover:      #1E293B;
-  --color-primary-foreground: #F8FAFC;
+  /* ─── Brand — Navy Purple ────────────────────────────────────── */
+  --color-primary:            #1E1B4B;
+  --color-primary-hover:      #17144A;
+  --color-primary-foreground: #FFFFFF;   /* pure white — 16:1 ✓ */
 
-  --color-secondary:          #3B82F6;
-  --color-secondary-hover:    #2563EB;
+  --color-secondary:            #7C3AED;
+  --color-secondary-hover:      #6D28D9;
   --color-secondary-foreground: #FFFFFF;
 
-  --color-tertiary:           #F1F5F9;
-  --color-tertiary-hover:     #E2E8F0;
-  --color-tertiary-foreground:#0F172A;
+  --color-tertiary:             #EDE9FE;
+  --color-tertiary-hover:       #DDD6FE;
+  --color-tertiary-foreground:  #3730A3; /* 7:1 on tertiary bg ✓ */
 
   /* ─── Surface ────────────────────────────────────────────────── */
   --color-background:   #FFFFFF;
-  --color-surface:      #F8FAFC;
-  --color-surface-2:    #F1F5F9;
-  --color-border:       #E2E8F0;
-  --color-border-2:     #CBD5E1;
+  --color-surface:      #F0ECFF;  /* clearly distinct from white */
+  --color-surface-2:    #E5DFFF;  /* clearly distinct from surface */
+  --color-border:       #C4B5FD;  /* violet-300 — visible UI separator */
+  --color-border-2:     #A78BFA;  /* violet-400 — strong on hover */
 
   /* ─── Text ───────────────────────────────────────────────────── */
-  --color-text:         #0F172A;
-  --color-text-muted:   #64748B;
-  --color-text-subtle:  #94A3B8;
+  --color-text:         #1E1B4B;  /* 16:1 on white ✓ */
+  --color-text-muted:   #4B4869;  /* 8.3:1 on white ✓ */
+  --color-text-subtle:  #6B6894;  /* 4.8:1 on white ✓  (was #9CA3AF — 2.5:1 FAIL) */
 
   /* ─── Status ─────────────────────────────────────────────────── */
-  --color-success:          #10B981;
-  --color-success-surface:  #ECFDF5;
-  --color-warning:          #F59E0B;
-  --color-warning-surface:  #FFFBEB;
-  --color-danger:           #EF4444;
-  --color-danger-surface:   #FEF2F2;
+  --color-success: #10B981;
+  --color-success-surface: #ECFDF5;
+  --color-warning: #F59E0B;
+  --color-warning-surface: #FFFBEB;
+  --color-danger: #EF4444;
+  --color-danger-surface: #FEF2F2;
 
   /* ─── Typography ─────────────────────────────────────────────── */
-  --font-sans:    'Inter', system-ui, sans-serif;
-  --font-heading: 'Inter', system-ui, sans-serif;
-  --font-mono:    ui-monospace, 'Cascadia Code', monospace;
+  --font-sans: 'Poppins', system-ui, sans-serif;
+  --font-heading: 'Poppins', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', monospace;
 
   /* ─── Breakpoints ────────────────────────────────────────────── */
-  --breakpoint-sm:  40rem;
-  --breakpoint-md:  48rem;
-  --breakpoint-lg:  64rem;
-  --breakpoint-xl:  80rem;
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
   --breakpoint-2xl: 96rem;
 }
 
+/* ─── Base styles ─────────────────────────────────────────────────
+   Placed in @layer base so they have lower cascade priority than
+   Tailwind's utility classes (e.g. bg-surface, text-text-muted).
+──────────────────────────────────────────────────────────────────── */
 @layer base {
   body {
     font-family: var(--font-sans);
@@ -54,5 +58,65 @@
     color: var(--color-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ─── Fluid root font-size ───────────────────────────────────────
+   html { font-size } is intentionally non-layered.
+   No Tailwind utility sets font-size on html, so there is no
+   cascade conflict. Non-layered ensures reliable application.
+──────────────────────────────────────────────────────────────────── */
+html {
+  font-size: 100%;
+}
+
+@media (max-width: 79.9375rem) {
+  html {
+    font-size: 93.75%;
+  }
+}
+
+@media (max-width: 63.9375rem) {
+  html {
+    font-size: 87.5%;
+  }
+}
+
+@media (max-width: 47.9375rem) {
+  html {
+    font-size: 81.25%;
+  }
+}
+
+@media (max-width: 29.9375rem) {
+  html {
+    font-size: 75%;
+  }
+}
+
+/* ─── Animations ─────────────────────────────────────────────────
+   @keyframes outside @layer — accessible globally, no cascade issue.
+──────────────────────────────────────────────────────────────────── */
+@keyframes shelter-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

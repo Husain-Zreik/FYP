@@ -30,7 +30,7 @@ export default function DashboardLayout({ children, title }) {
     <div className="flex h-screen bg-surface overflow-hidden">
 
       {/* ── Sidebar ───────────────────────────────────────────────── */}
-      <aside className="w-60 shrink-0 bg-background border-r border-border flex flex-col">
+      <aside className="w-60 shrink-0 bg-background border-e border-border flex flex-col">
 
         {/* Logo */}
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
