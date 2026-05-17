@@ -1,36 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserCheck, Inbox, Settings2,
-  LogOut, Shield, ArrowLeft,
+  LogOut, Shield, ArrowLeft, Package, Archive,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { useUiStore }   from '../../store/uiStore'
 import Button from '../ui/Button'
 
-const NAV_GROUPS = [
-  {
-    label: 'Overview',
-    items: [
-      { label: 'Dashboard',   path: '/dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: 'Operations',
-    items: [
-      { label: 'Shelters',   path: '/shelters',   icon: Building2  },
-      { label: 'Civilians',  path: '/civilians',  icon: UserCheck  },
-      { label: 'Staff',      path: '/users',      icon: Users      },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { label: 'Requests',    path: '/requests',          icon: Inbox     },
-      { label: 'Permissions', path: '/role-capabilities', icon: Settings2 },
-    ],
-  },
-]
-
-function NavItem({ label, path, icon: Icon, end }) {
+function NavItem({ label, path, icon: Icon, end, badge }) {
   return (
     <NavLink
       to={path}
@@ -43,16 +20,57 @@ function NavItem({ label, path, icon: Icon, end }) {
         }`
       }
     >
-      <Icon size={16} className="shrink-0 opacity-80" />
-      <span className="flex-1 truncate">{label}</span>
+      {({ isActive }) => (
+        <>
+          <Icon size={16} className="shrink-0 opacity-80" />
+          <span className="flex-1 truncate">{label}</span>
+          {badge > 0 && !isActive && (
+            <span className="text-[10px] font-bold bg-danger text-white px-1.5 py-0.5 rounded-full leading-none shrink-0">
+              {badge}
+            </span>
+          )}
+        </>
+      )}
     </NavLink>
   )
 }
 
 export default function DashboardLayout({ children, title, subtitle, back, badge, actions }) {
-  const user     = useAuthStore((s) => s.user)
-  const logout   = useAuthStore((s) => s.logout)
-  const navigate = useNavigate()
+  const user               = useAuthStore((s) => s.user)
+  const logout             = useAuthStore((s) => s.logout)
+  const navigate           = useNavigate()
+  const govPendingAidCount = useUiStore((s) => s.govPendingAidCount)
+
+  const NAV_GROUPS = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard',   path: '/dashboard', icon: LayoutDashboard },
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { label: 'Shelters',   path: '/shelters',   icon: Building2  },
+        { label: 'Civilians',  path: '/civilians',  icon: UserCheck  },
+        { label: 'Staff',      path: '/users',      icon: Users      },
+      ],
+    },
+    {
+      label: 'System',
+      items: [
+        { label: 'Requests',    path: '/requests',          icon: Inbox     },
+        { label: 'Permissions', path: '/role-capabilities', icon: Settings2 },
+      ],
+    },
+    {
+      label: 'Aid Management',
+      items: [
+        { label: 'Aid Inventory', path: '/aid/inventory', icon: Archive },
+        { label: 'Aid Requests',  path: '/aid/requests',  icon: Package, badge: govPendingAidCount },
+      ],
+    },
+  ]
 
   async function handleLogout() {
     await logout()

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
+use App\Models\AidRequest;
+use App\Models\CivilianNeed;
 use App\Models\CivilianProfile;
 use App\Models\Shelter;
 use App\Models\ShelterRequest;
@@ -40,8 +42,9 @@ class StatsController extends Controller
                 'private_civilians'  => $privateCivilians,
                 'seeking_civilians'  => max(0, $seekingCivilians),
                 'total_staff'        => $totalStaff,
-                'pending_requests'   => $pendingRequests,
-                'recent_civilians'   => UserResource::collection($recentCivilians),
+                'pending_requests'     => $pendingRequests,
+                'pending_aid_requests' => AidRequest::where('status', 'pending')->count(),
+                'recent_civilians'     => UserResource::collection($recentCivilians),
             ],
             'message' => 'OK',
         ]);
@@ -81,8 +84,11 @@ class StatsController extends Controller
                 'civilians_count'    => $shelter->civilians_count,
                 'staff_count'        => $shelter->staff_count,
                 'occupancy_pct'      => $occupancyPct,
-                'pending_requests'   => $pendingRequests,
-                'recent_civilians'   => UserResource::collection($recentCivilians),
+                'pending_requests'       => $pendingRequests,
+                'pending_civilian_needs' => CivilianNeed::where('shelter_id', $user->shelter_id)
+                    ->where('status', 'pending')
+                    ->count(),
+                'recent_civilians'       => UserResource::collection($recentCivilians),
             ],
             'message' => 'OK',
         ]);

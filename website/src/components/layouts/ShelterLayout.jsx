@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserCheck, Users, Inbox,
-  LogOut, Shield, ArrowLeft, Building2,
+  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
@@ -39,7 +39,8 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
   const user         = useAuthStore((s) => s.user)
   const logout       = useAuthStore((s) => s.logout)
   const navigate     = useNavigate()
-  const pendingCount = useUiStore((s) => s.shelterPendingCount)
+  const pendingCount      = useUiStore((s) => s.shelterPendingCount)
+  const pendingNeedsCount = useUiStore((s) => s.shelterPendingNeedsCount)
 
   async function handleLogout() {
     await logout()
@@ -69,6 +70,13 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
       label: 'Requests',
       items: [
         { label: 'Requests', path: '/shelter/requests', icon: Inbox, badge: pendingCount },
+      ],
+    },
+    {
+      label: 'Aid',
+      items: [
+        { label: 'Aid Requests',   path: '/shelter/aid-requests',   icon: Package },
+        { label: 'Civilian Needs', path: '/shelter/civilian-needs', icon: HeartHandshake, badge: pendingNeedsCount },
       ],
     },
   ]

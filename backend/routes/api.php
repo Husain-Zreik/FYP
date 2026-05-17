@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\AidBatchController;
+use App\Http\Controllers\AidCategoryController;
+use App\Http\Controllers\AidRequestController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CivilianNeedController;
 use App\Http\Controllers\RoleCapabilityController;
 use App\Http\Controllers\ShelterController;
 use App\Http\Controllers\ShelterRequestController;
@@ -38,5 +42,17 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('shelter-requests/{shelterRequest}/accept',     [ShelterRequestController::class, 'accept']);
     Route::patch('shelter-requests/{shelterRequest}/reject',     [ShelterRequestController::class, 'reject']);
     Route::patch('shelter-requests/{shelterRequest}/cancel',     [ShelterRequestController::class, 'cancel']);
+
+    // Aid categories
+    Route::apiResource('aid-categories', AidCategoryController::class);
+
+    // Aid inventory (batches)
+    Route::apiResource('aid-batches', AidBatchController::class)->except(['update']);
+
+    // Aid requests (shelter → government)
+    Route::apiResource('aid-requests', AidRequestController::class)->except(['destroy']);
+
+    // Civilian needs (civilian → shelter)
+    Route::apiResource('civilian-needs', CivilianNeedController::class)->except(['destroy']);
 
 });

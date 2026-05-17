@@ -21,6 +21,12 @@ import ShelterCiviliansPage     from '../pages/shelter/CiviliansPage'
 import ShelterCivilianDetail    from '../pages/shelter/CivilianDetailPage'
 import ShelterStaffPage         from '../pages/shelter/StaffPage'
 import ShelterRequestsPage      from '../pages/shelter/RequestsPage'
+import ShelterAidRequestsPage   from '../pages/shelter/AidRequestsPage'
+import CivilianNeedsPage        from '../pages/shelter/CivilianNeedsPage'
+
+// Government aid pages
+import AidInventoryPage         from '../pages/AidInventoryPage'
+import GovAidRequestsPage       from '../pages/GovAidRequestsPage'
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +47,8 @@ export const router = createBrowserRouter([
           { path: '/civilians/:id',element: <GovCivilianDetailPage />  },
           { path: '/requests',          element: <GovRequestsPage />        },
           { path: '/role-capabilities', element: <RoleCapabilitiesPage />   },
+          { path: '/aid/inventory',     element: <AidInventoryPage />       },
+          { path: '/aid/requests',      element: <GovAidRequestsPage />     },
         ],
       },
 
@@ -52,8 +60,10 @@ export const router = createBrowserRouter([
           { path: '/shelter/info',         element: <ShelterInfoPage />       },
           { path: '/shelter/civilians',    element: <ShelterCiviliansPage />  },
           { path: '/shelter/civilians/:id',element: <ShelterCivilianDetail /> },
-          { path: '/shelter/staff',        element: <ShelterStaffPage />      },
-          { path: '/shelter/requests',     element: <ShelterRequestsPage />   },
+          { path: '/shelter/staff',        element: <ShelterStaffPage />         },
+          { path: '/shelter/requests',     element: <ShelterRequestsPage />    },
+          { path: '/shelter/aid-requests', element: <ShelterAidRequestsPage /> },
+          { path: '/shelter/civilian-needs',element: <CivilianNeedsPage />     },
         ],
       },
 
