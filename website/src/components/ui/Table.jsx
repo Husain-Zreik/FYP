@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Loader from './Loader'
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 function Pagination({ page, totalPages, total, pageSize, onChange }) {
@@ -84,12 +85,14 @@ export default function Table({
     ? data
     : data.slice((page - 1) * pageSize, page * pageSize)
 
+  const placeholderCls = 'bg-background rounded-2xl border border-border flex items-center justify-center text-center px-6'
+  const placeholderH  = { minHeight: 'clamp(320px, 55vh, 520px)' }
+
   // ── Loading ──
   if (loading) {
     return (
-      <div className="bg-background rounded-2xl border border-border flex items-center justify-center"
-        style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-        <div className="w-6 h-6 border-2 border-border border-t-secondary rounded-full animate-spin" />
+      <div className={placeholderCls} style={placeholderH}>
+        <Loader size="lg" />
       </div>
     )
   }
@@ -97,9 +100,10 @@ export default function Table({
   // ── Empty ──
   if (data.length === 0) {
     return (
-      <div className="bg-background rounded-2xl border border-border flex items-center justify-center text-center px-6"
-        style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-        {emptyNode ?? <p className="text-sm text-text-muted">{emptyText}</p>}
+      <div className={placeholderCls} style={placeholderH}>
+        <div className="flex flex-col items-center gap-2">
+          {emptyNode ?? <p className="text-sm text-text-muted">{emptyText}</p>}
+        </div>
       </div>
     )
   }

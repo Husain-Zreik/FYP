@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserCheck,
-  LogOut, Shield, ChevronRight,
+  LogOut, Shield, ChevronRight, ArrowLeft,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import Button from '../ui/Button'
@@ -13,7 +13,14 @@ const navItems = [
   { label: 'Civilians', path: '/civilians', icon: UserCheck       },
 ]
 
-export default function DashboardLayout({ children, title }) {
+/*
+ * title    — page heading (required)
+ * subtitle — small line below the title
+ * back     — show a back arrow; pass -1 for history.back() or a path string
+ * badge    — ReactNode shown inline beside the title (e.g. a <Badge>)
+ * actions  — ReactNode for header-right buttons (Save, Add, etc.)
+ */
+export default function DashboardLayout({ children, title, subtitle, back, badge, actions }) {
   const user     = useAuthStore((s) => s.user)
   const logout   = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
@@ -88,8 +95,37 @@ export default function DashboardLayout({ children, title }) {
 
       {/* ── Main ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 shrink-0 bg-background border-b border-border flex items-center px-6">
-          <h1 className="text-base font-semibold font-heading text-text">{title}</h1>
+        <header className="shrink-0 bg-background border-b border-border px-6"
+          style={{ minHeight: '4rem' }}>
+          <div className="flex items-center gap-3 py-3" style={{ minHeight: '4rem' }}>
+
+            {/* Back arrow */}
+            {back !== undefined && (
+              <button
+                onClick={() => typeof back === 'number' ? navigate(back) : navigate(back)}
+                className="p-1.5 rounded-lg text-text-subtle hover:text-text hover:bg-surface transition-colors cursor-pointer shrink-0 -ms-1">
+                <ArrowLeft size={16} />
+              </button>
+            )}
+
+            {/* Title + badge + subtitle */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base font-semibold font-heading text-text leading-tight">
+                  {title}
+                </h1>
+                {badge && <span className="flex items-center">{badge}</span>}
+              </div>
+              {subtitle && (
+                <p className="text-xs text-text-muted mt-0.5 leading-tight">{subtitle}</p>
+              )}
+            </div>
+
+            {/* Header actions */}
+            {actions && (
+              <div className="flex items-center gap-2 shrink-0">{actions}</div>
+            )}
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">
           {children}

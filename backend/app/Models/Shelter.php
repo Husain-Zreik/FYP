@@ -11,11 +11,34 @@ class Shelter extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
+        'name', 'code', 'governorate', 'district', 'address',
+        'latitude', 'longitude', 'capacity', 'rooms',
+        'status', 'phone', 'email', 'notes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'latitude'  => 'float',
+            'longitude' => 'float',
+            'capacity'  => 'integer',
+            'rooms'     => 'integer',
+        ];
+    }
 
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function staff(): HasMany
+    {
+        return $this->hasMany(User::class)
+            ->whereIn('role', ['shelter_admin', 'shelter_staff']);
+    }
+
+    public function civilians(): HasMany
+    {
+        return $this->hasMany(User::class)->where('role', 'civilian');
     }
 }

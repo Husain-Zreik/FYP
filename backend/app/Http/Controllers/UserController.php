@@ -20,12 +20,41 @@ class UserController extends Controller
         if ($auth->isShelterScoped()) {
             $query->where('shelter_id', $auth->shelter_id);
         }
+
+        // Optional filters (used for admin-search dropdowns etc.)
+        if ($request->query('role')) {
+            $query->where('role', $request->query('role'));
+        }
+        if ($request->query('unassigned') === 'true') {
+            $query->whereNull('shelter_id');
+        }
+        if ($request->query('q')) {
+            $q = $request->query('q');
+            $query->where(fn ($qb) =>
+                $qb->where('name',  'like', "%{$q}%")
+                   ->orWhere('email', 'like', "%{$q}%")
+            );
+        }
         // government roles see all users
 
         $users = $query->orderBy('name')->get();
 
         return response()->json([
             'data'    => UserResource::collection($users),
+            'message' => 'OK',
+        ]);
+    }
+
+    public function show(Request $request, User $user): JsonResponse
+    {
+        $auth = $request->user();
+
+        if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) {
+            abort(403);
+        }
+
+        return response()->json([
+            'data'    => new UserResource($user->load('shelter', 'civilianProfile')),
             'message' => 'OK',
         ]);
     }
@@ -62,8 +91,16 @@ class UserController extends Controller
 
         $user->update($data);
 
+        // Update civilian profile if profile fields are provided
+        if ($user->role === 'civilian' && $request->has('profile')) {
+            $user->civilianProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                array_filter($request->input('profile', []), fn ($v) => $v !== null)
+            );
+        }
+
         return response()->json([
-            'data'    => new UserResource($user->fresh()->load('shelter')),
+            'data'    => new UserResource($user->fresh()->load('shelter', 'civilianProfile')),
             'message' => 'User updated successfully.',
         ]);
     }
@@ -78,6 +115,16 @@ class UserController extends Controller
 
         if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) {
             abort(403);
+        }
+
+        // Guard: cannot delete the last government admin
+        if ($user->role === 'government_admin') {
+            $remaining = User::where('role', 'government_admin')->count();
+            if ($remaining <= 1) {
+                return response()->json([
+                    'message' => 'Cannot delete the last government administrator. Assign another government admin first.',
+                ], 422);
+            }
         }
 
         $user->delete();

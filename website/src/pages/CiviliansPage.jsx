@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import UserPanel       from '../components/users/UserPanel'
 import { Button, Table, Badge, SearchInput, ConfirmDialog } from '../components/ui'
 import { getUsers, createUser, updateUser, deleteUser } from '../api/users'
 
 export default function CiviliansPage() {
+  const navigate = useNavigate()
   const [all,       setAll]       = useState([])
   const [loading,   setLoading]   = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -90,8 +92,9 @@ export default function CiviliansPage() {
       header: '',
       render: (_, u) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="icon-edit"   onClick={() => setPanel({ user: u })} title="Edit"><Pencil size={13} /></Button>
-          <Button variant="icon-delete" onClick={() => setDelTarget(u)}       title="Delete"><Trash2 size={13} /></Button>
+          <Button variant="icon-ghost"  onClick={() => navigate(`/civilians/${u.id}`)} title="View details"><Eye    size={13} /></Button>
+          <Button variant="icon-edit"   onClick={() => setPanel({ user: u })}           title="Edit"><Pencil size={13} /></Button>
+          <Button variant="icon-delete" onClick={() => setDelTarget(u)}                 title="Delete"><Trash2 size={13} /></Button>
         </div>
       ),
     },
@@ -128,7 +131,7 @@ export default function CiviliansPage() {
         <UserPanel
           editingUser={panel.user}
           availableRoles={['civilian']}
-          showShelter={false}
+          showShelter={true}
           onSave={handleSave}
           onClose={() => setPanel(null)}
         />

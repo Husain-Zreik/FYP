@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ShelterController;
+use App\Http\Controllers\ShelterRequestController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserController;
 
 // ─── Public ───────────────────────────────────────────────────────────────────
@@ -18,7 +20,16 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
     });
 
-    Route::get('shelters',         [ShelterController::class, 'index']);
-    Route::apiResource('users',    UserController::class)->except(['show']);
+    Route::get('stats/government',               [StatsController::class, 'government']);
+    Route::get('stats/shelter',                  [StatsController::class, 'shelter']);
+    Route::apiResource('shelters',               ShelterController::class);
+    Route::apiResource('users',                  UserController::class);
+
+    // Shelter request / invitation management
+    Route::get ('civilians/available',                           [ShelterRequestController::class, 'available']);
+    Route::get ('shelter-requests',                              [ShelterRequestController::class, 'index']);
+    Route::post('shelter-requests/invite',                       [ShelterRequestController::class, 'invite']);
+    Route::patch('shelter-requests/{shelterRequest}/accept',     [ShelterRequestController::class, 'accept']);
+    Route::patch('shelter-requests/{shelterRequest}/reject',     [ShelterRequestController::class, 'reject']);
 
 });

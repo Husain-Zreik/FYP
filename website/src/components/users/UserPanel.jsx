@@ -11,7 +11,8 @@ const ROLE_LABELS = {
   civilian:         'Civilian',
 }
 
-const SHELTER_ROLES = ['shelter_admin', 'shelter_staff']
+// Roles that can be assigned to a shelter
+const SHELTER_ROLES = ['shelter_admin', 'shelter_staff', 'civilian']
 
 export default function UserPanel({ editingUser, availableRoles, showShelter, onSave, onClose }) {
   const isEditing = !!editingUser

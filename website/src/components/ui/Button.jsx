@@ -59,7 +59,7 @@ export default function Button({
       title={title}
       style={VARIANT_STYLE[variant]}
       className={`
-        inline-flex items-center justify-center transition-all duration-150
+        inline-flex items-center justify-center transition-all duration-150 cursor-pointer
         disabled:opacity-50 disabled:cursor-not-allowed
         ${isIcon ? 'p-1.5' : SIZE_CLASSES[size] ?? SIZE_CLASSES.md}
         ${VARIANT_CLASSES[variant] ?? VARIANT_CLASSES.primary}
