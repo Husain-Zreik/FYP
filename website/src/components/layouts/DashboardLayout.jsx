@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserCheck, Inbox, Settings2,
-  LogOut, Shield, ArrowLeft, Package, Archive,
+  LogOut, Shield, ArrowLeft, Package, Archive, Send,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
@@ -67,6 +67,7 @@ export default function DashboardLayout({ children, title, subtitle, back, badge
       label: 'Aid Management',
       items: [
         { label: 'Aid Inventory', path: '/aid/inventory', icon: Archive },
+        { label: 'Send Aid',      path: '/aid/send',      icon: Send    },
         { label: 'Aid Requests',  path: '/aid/requests',  icon: Package, badge: govPendingAidCount },
       ],
     },

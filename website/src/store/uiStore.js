@@ -9,4 +9,7 @@ export const useUiStore = create((set) => ({
 
   govPendingAidCount: 0,
   setGovPendingAidCount: (n) => set({ govPendingAidCount: n }),
+
+  shelterPendingIncomingAidCount: 0,
+  setShelterPendingIncomingAidCount: (n) => set({ shelterPendingIncomingAidCount: n }),
 }))

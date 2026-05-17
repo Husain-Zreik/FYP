@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserCheck, Users, Inbox,
-  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake,
+  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake, ArrowDownToLine,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
@@ -39,8 +39,9 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
   const user         = useAuthStore((s) => s.user)
   const logout       = useAuthStore((s) => s.logout)
   const navigate     = useNavigate()
-  const pendingCount      = useUiStore((s) => s.shelterPendingCount)
-  const pendingNeedsCount = useUiStore((s) => s.shelterPendingNeedsCount)
+  const pendingCount               = useUiStore((s) => s.shelterPendingCount)
+  const pendingNeedsCount          = useUiStore((s) => s.shelterPendingNeedsCount)
+  const pendingIncomingAidCount    = useUiStore((s) => s.shelterPendingIncomingAidCount)
 
   async function handleLogout() {
     await logout()
@@ -75,8 +76,10 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
     {
       label: 'Aid',
       items: [
-        { label: 'Aid Requests',   path: '/shelter/aid-requests',   icon: Package },
-        { label: 'Civilian Needs', path: '/shelter/civilian-needs', icon: HeartHandshake, badge: pendingNeedsCount },
+        { label: 'Aid Requests',    path: '/shelter/aid-requests',    icon: Package                                        },
+        { label: 'Incoming Aid',   path: '/shelter/incoming-aid',   icon: ArrowDownToLine, badge: pendingIncomingAidCount },
+        { label: 'Aid to Civilians',path: '/shelter/aid-to-civilians',icon: HeartHandshake                               },
+        { label: 'Civilian Needs', path: '/shelter/civilian-needs', icon: UserCheck,       badge: pendingNeedsCount      },
       ],
     },
   ]

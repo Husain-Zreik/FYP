@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('role_capabilities', function (Blueprint $table) {
             $table->id();
-            $table->enum('role', ['government_staff', 'shelter_staff']);
-            $table->string('capability', 80);
-            $table->boolean('enabled')->default(true);
+            $table->string('role');
+            $table->string('capability');
+            $table->boolean('enabled')->default(false);
             $table->timestamps();
             $table->unique(['role', 'capability']);
         });
