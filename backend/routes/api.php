@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RoleCapabilityController;
 use App\Http\Controllers\ShelterController;
 use App\Http\Controllers\ShelterRequestController;
 use App\Http\Controllers\StatsController;
@@ -20,16 +21,22 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
     });
 
+    Route::get ('role-capabilities',             [RoleCapabilityController::class, 'index']);
+    Route::patch('role-capabilities',            [RoleCapabilityController::class, 'update']);
     Route::get('stats/government',               [StatsController::class, 'government']);
     Route::get('stats/shelter',                  [StatsController::class, 'shelter']);
     Route::apiResource('shelters',               ShelterController::class);
+    Route::post('shelters/{shelter}/upload-image', [ShelterController::class, 'uploadImage']);
     Route::apiResource('users',                  UserController::class);
+    Route::post('users/{user}/upload-id',        [UserController::class, 'uploadIdDocument']);
 
     // Shelter request / invitation management
+    Route::get ('civilians/{user}/requests',                             [ShelterRequestController::class, 'civilianRequests']);
     Route::get ('civilians/available',                           [ShelterRequestController::class, 'available']);
     Route::get ('shelter-requests',                              [ShelterRequestController::class, 'index']);
     Route::post('shelter-requests/invite',                       [ShelterRequestController::class, 'invite']);
     Route::patch('shelter-requests/{shelterRequest}/accept',     [ShelterRequestController::class, 'accept']);
     Route::patch('shelter-requests/{shelterRequest}/reject',     [ShelterRequestController::class, 'reject']);
+    Route::patch('shelter-requests/{shelterRequest}/cancel',     [ShelterRequestController::class, 'cancel']);
 
 });

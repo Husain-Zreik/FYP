@@ -5,7 +5,7 @@ import UserPanel       from '../components/users/UserPanel'
 import { Button, Table, Badge, SearchInput, Select, ConfirmDialog } from '../components/ui'
 import { getUsers, createUser, updateUser, deleteUser } from '../api/users'
 
-// Civilians have their own dedicated page — staff page excludes them
+// Civilians have their own page — staff page excludes them
 const STAFF_ROLES = ['government_admin', 'government_staff', 'shelter_admin', 'shelter_staff']
 
 const ROLE_BADGE_VARIANT = {
@@ -13,7 +13,6 @@ const ROLE_BADGE_VARIANT = {
   government_staff: 'purple',
   shelter_admin:    'success',
   shelter_staff:    'muted',
-  civilian:         'warning',
 }
 
 const ROLE_LABEL = {
@@ -21,7 +20,6 @@ const ROLE_LABEL = {
   government_staff: 'Gov Staff',
   shelter_admin:    'Shelter Admin',
   shelter_staff:    'Shelter Staff',
-  civilian:         'Civilian',
 }
 
 const ROLE_FILTER_OPTIONS = [
@@ -37,6 +35,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [panel,      setPanel]      = useState(null)
   const [delTarget,  setDelTarget]  = useState(null)
+  const [deleting,   setDeleting]   = useState(false)
 
   useEffect(() => {
     getUsers()
@@ -48,7 +47,7 @@ export default function UsersPage() {
   const filtered = users.filter(u => {
     const q = search.toLowerCase()
     return (
-      u.role !== 'civilian' &&                                                    // civilians are on their own page
+      u.role !== 'civilian' &&
       (!search || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
       (!roleFilter || u.role === roleFilter)
     )
@@ -66,15 +65,17 @@ export default function UsersPage() {
   }
 
   async function handleDelete(user) {
-    await deleteUser(user.id)
-    setUsers(prev => prev.filter(u => u.id !== user.id))
-    setDelTarget(null)
+    setDeleting(true)
+    try {
+      await deleteUser(user.id)
+      setUsers(prev => prev.filter(u => u.id !== user.id))
+      setDelTarget(null)
+    } finally { setDeleting(false) }
   }
 
   const columns = [
     {
-      key: 'name',
-      header: 'User',
+      key: 'name', header: 'User',
       render: (_, u) => (
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
@@ -88,32 +89,19 @@ export default function UsersPage() {
       ),
     },
     {
-      key: 'role',
-      header: 'Role',
-      render: role => (
-        <Badge variant={ROLE_BADGE_VARIANT[role] ?? 'muted'}>
-          {ROLE_LABEL[role] ?? role}
-        </Badge>
-      ),
+      key: 'role', header: 'Role',
+      render: role => <Badge variant={ROLE_BADGE_VARIANT[role] ?? 'muted'}>{ROLE_LABEL[role] ?? role}</Badge>,
     },
     {
-      key: 'shelter',
-      header: 'Shelter',
-      className: 'hidden md:table-cell',
+      key: 'shelter', header: 'Shelter', className: 'hidden md:table-cell',
       render: (_, u) => <span className="text-sm text-text-muted">{u.shelter?.name ?? '—'}</span>,
     },
     {
-      key: 'is_active',
-      header: 'Status',
-      render: active => (
-        <Badge variant={active ? 'success' : 'danger'}>
-          {active ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
+      key: 'is_active', header: 'Status',
+      render: active => <Badge variant={active ? 'success' : 'danger'}>{active ? 'Active' : 'Inactive'}</Badge>,
     },
     {
-      key: 'id',
-      header: '',
+      key: 'id', header: '',
       render: (_, u) => (
         <div className="flex items-center justify-end gap-1">
           <Button variant="icon-edit"   onClick={() => setPanel({ user: u })} title="Edit"><Pencil size={13} /></Button>
@@ -124,7 +112,15 @@ export default function UsersPage() {
   ]
 
   return (
-    <DashboardLayout title="Staff">
+    <DashboardLayout
+      title="Staff"
+      subtitle="Manage all platform staff and their roles."
+      actions={
+        <Button onClick={() => setPanel({})}>
+          <Plus size={14} /> Add staff
+        </Button>
+      }
+    >
 
       {loadError && (
         <div className="text-sm text-danger bg-danger-surface border border-danger/20 rounded-xl px-4 py-3 mb-5">
@@ -132,44 +128,23 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <SearchInput
-          value={search} onChange={setSearch}
-          placeholder="Search name or email…"
-          className="flex-1 min-w-48 max-w-xs"
-        />
-        <Select
-          value={roleFilter} onChange={setRoleFilter}
-          options={ROLE_FILTER_OPTIONS}
-          className="w-40"
-        />
-        <Button className="ms-auto" onClick={() => setPanel({})}>
-          <Plus size={14} /> Add staff
-        </Button>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" className="flex-1 min-w-48 max-w-xs" />
+        <Select value={roleFilter} onChange={setRoleFilter} options={ROLE_FILTER_OPTIONS} className="w-40" />
       </div>
 
-      <Table
-        columns={columns}
-        data={filtered}
-        loading={loading}
-        emptyText="No staff members match your search."
-      />
+      <Table columns={columns} data={filtered} loading={loading} emptyText="No staff members match your search." />
 
       {panel !== null && (
-        <UserPanel
-          editingUser={panel.user}
-          availableRoles={STAFF_ROLES}
-          showShelter={true}
-          onSave={handleSave}
-          onClose={() => setPanel(null)}
-        />
+        <UserPanel editingUser={panel.user} availableRoles={STAFF_ROLES} showShelter={true}
+          onSave={handleSave} onClose={() => setPanel(null)} />
       )}
 
       {delTarget && (
         <ConfirmDialog
           title="Delete user?"
           message={<><span className="font-semibold text-text">{delTarget.name}</span> will be permanently removed.</>}
+          loading={deleting}
           onConfirm={() => handleDelete(delTarget)}
           onCancel={() => setDelTarget(null)}
         />

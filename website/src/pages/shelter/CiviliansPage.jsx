@@ -1,22 +1,22 @@
-import { useEffect, useState, useCallback } from 'react'
+﻿import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, UserPlus, Pencil, Trash2, Check, X, Search, Clock, UserCheck, Eye } from 'lucide-react'
+import { Plus, UserPlus, Pencil, Trash2, Check, X, Search, UserCheck, Eye } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
 import UserPanel     from '../../components/users/UserPanel'
-import { Button, Table, Badge, SearchInput, Input, ConfirmDialog } from '../../components/ui'
+import { Button, Table, Badge, SearchInput, ConfirmDialog } from '../../components/ui'
 import { getUsers, createUser, updateUser, deleteUser } from '../../api/users'
-import { getRequests, inviteCivilian, acceptRequest, rejectRequest, searchAvailable } from '../../api/shelterRequests'
+import { inviteCivilian, searchAvailable } from '../../api/shelterRequests'
 
-// ─── Invite Panel ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Invite Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function InvitePanel({ onClose, onInvited }) {
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState([])
   const [loading,  setLoading]  = useState(false)
-  const [inviting, setInviting] = useState(null) // id being invited
+  const [inviting, setInviting] = useState(null)
   const [invited,  setInvited]  = useState(new Set())
   const [error,    setError]    = useState(null)
 
-  const search = useCallback(async (q) => {
+  const doSearch = useCallback(async (q) => {
     if (!q.trim()) { setResults([]); return }
     setLoading(true)
     try {
@@ -30,9 +30,9 @@ function InvitePanel({ onClose, onInvited }) {
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => search(query), 350)
+    const t = setTimeout(() => doSearch(query), 350)
     return () => clearTimeout(t)
-  }, [query, search])
+  }, [query, doSearch])
 
   async function handleInvite(civilian) {
     setInviting(civilian.id)
@@ -55,23 +55,21 @@ function InvitePanel({ onClose, onInvited }) {
       <div className="relative z-10 bg-background border border-border rounded-2xl w-full max-w-md shadow-xl flex flex-col"
         style={{ maxHeight: '80vh' }}>
 
-        {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-border shrink-0">
           <div>
             <h2 className="text-base font-semibold font-heading text-text">Invite civilian</h2>
-            <p className="text-xs text-text-muted mt-0.5">Search for civilians not yet in any shelter</p>
+            <p className="text-xs text-text-muted mt-0.5">Search civilians not yet in any shelter</p>
           </div>
           <Button variant="icon-ghost" onClick={onClose}><X size={16} /></Button>
         </div>
 
-        {/* Search */}
         <div className="px-6 py-4 border-b border-border shrink-0">
           <div className="relative">
             <Search size={14} className="absolute inset-s-3 top-1/2 -translate-y-1/2 text-text-subtle" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search by name, email or phone…"
+              placeholder="Search by name, email or phoneâ€¦"
               autoFocus
               className="w-full border border-border rounded-xl ps-9 pe-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
             />
@@ -79,26 +77,18 @@ function InvitePanel({ onClose, onInvited }) {
           {error && <p className="text-xs text-danger mt-2">{error}</p>}
         </div>
 
-        {/* Results */}
         <div className="flex-1 overflow-y-auto px-6 py-3">
           {loading && (
             <div className="flex justify-center py-8">
               <div className="w-5 h-5 border-2 border-border border-t-secondary rounded-full animate-spin" />
             </div>
           )}
-
           {!loading && query && results.length === 0 && (
-            <p className="text-sm text-text-muted text-center py-8">
-              No unassigned civilians found.
-            </p>
+            <p className="text-sm text-text-muted text-center py-8">No unassigned civilians found.</p>
           )}
-
           {!loading && !query && (
-            <p className="text-sm text-text-muted text-center py-8">
-              Start typing to search available civilians.
-            </p>
+            <p className="text-sm text-text-muted text-center py-8">Start typing to search.</p>
           )}
-
           {!loading && results.length > 0 && (
             <div className="space-y-2">
               {results.map(c => {
@@ -113,11 +103,8 @@ function InvitePanel({ onClose, onInvited }) {
                       <p className="text-sm font-medium text-text truncate">{c.name}</p>
                       <p className="text-xs text-text-muted truncate">{c.phone ?? c.email}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={done ? 'secondary' : 'primary'}
-                      disabled={done || inviting === c.id}
-                      loading={inviting === c.id}
+                    <Button size="sm" variant={done ? 'secondary' : 'primary'}
+                      disabled={done || inviting === c.id} loading={inviting === c.id}
                       onClick={() => !done && handleInvite(c)}>
                       {done ? <><Check size={12} /> Sent</> : 'Invite'}
                     </Button>
@@ -132,62 +119,23 @@ function InvitePanel({ onClose, onInvited }) {
   )
 }
 
-// ─── Request card ─────────────────────────────────────────────────────────────
-function RequestCard({ req, onAccept, onReject, loading }) {
-  const isInvitation = req.type === 'invitation'
-
-  return (
-    <div className="flex items-center gap-4 p-4 bg-background border border-border rounded-xl">
-      <div className="w-9 h-9 rounded-full bg-warning-surface flex items-center justify-center text-sm font-bold text-warning shrink-0">
-        {req.civilian.name.charAt(0).toUpperCase()}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text truncate">{req.civilian.name}</p>
-        <p className="text-xs text-text-muted truncate">{req.civilian.phone ?? req.civilian.email}</p>
-      </div>
-
-      <Badge variant={isInvitation ? 'info' : 'warning'} className="shrink-0">
-        {isInvitation ? 'Invited' : 'Requested'}
-      </Badge>
-
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Button size="sm" variant="primary" loading={loading === `accept-${req.id}`}
-          onClick={() => onAccept(req)}>
-          <Check size={12} /> Accept
-        </Button>
-        <Button size="sm" variant="danger" loading={loading === `reject-${req.id}`}
-          onClick={() => onReject(req)}>
-          <X size={12} /> Reject
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ShelterCiviliansPage() {
   const navigate = useNavigate()
-  const [all,         setAll]         = useState([])
-  const [requests,    setRequests]    = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [loadError,   setLoadError]   = useState(null)
-  const [search,      setSearch]      = useState('')
-  const [panel,       setPanel]       = useState(null)
-  const [showInvite,  setShowInvite]  = useState(false)
-  const [delTarget,   setDelTarget]   = useState(null)
-  const [reqLoading,  setReqLoading]  = useState(null) // 'accept-id' | 'reject-id'
 
-  function loadData() {
-    return Promise.all([
-      getUsers().then(res => setAll(res.data ?? [])),
-      getRequests().then(res => setRequests(res.data ?? [])),
-    ])
-  }
+  const [all,        setAll]        = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [loadError,  setLoadError]  = useState(null)
+  const [search,     setSearch]     = useState('')
+  const [panel,      setPanel]      = useState(null)
+  const [showInvite, setShowInvite] = useState(false)
+  const [delTarget,  setDelTarget]  = useState(null)
+  const [deleting,  setDeleting]  = useState(false)
 
   useEffect(() => {
-    loadData()
-      .catch(err => setLoadError(err.message ?? 'Failed to load data.'))
+    getUsers()
+      .then(res => setAll(res.data ?? []))
+      .catch(err => setLoadError(err.message ?? 'Failed to load civilians.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -209,36 +157,17 @@ export default function ShelterCiviliansPage() {
   }
 
   async function handleDelete(user) {
-    await deleteUser(user.id)
-    setAll(prev => prev.filter(u => u.id !== user.id))
-    setDelTarget(null)
-  }
-
-  async function handleAccept(req) {
-    setReqLoading(`accept-${req.id}`)
+    setDeleting(true)
     try {
-      await acceptRequest(req.id)
-      setRequests(prev => prev.filter(r => r.id !== req.id))
-      await getUsers().then(res => setAll(res.data ?? []))
-    } finally {
-      setReqLoading(null)
-    }
-  }
-
-  async function handleReject(req) {
-    setReqLoading(`reject-${req.id}`)
-    try {
-      await rejectRequest(req.id)
-      setRequests(prev => prev.filter(r => r.id !== req.id))
-    } finally {
-      setReqLoading(null)
-    }
+      await deleteUser(user.id)
+      setAll(prev => prev.filter(u => u.id !== user.id))
+      setDelTarget(null)
+    } finally { setDeleting(false) }
   }
 
   const columns = [
     {
-      key: 'name',
-      header: 'Civilian',
+      key: 'name', header: 'Civilian',
       render: (_, u) => (
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-warning-surface flex items-center justify-center text-xs font-bold text-warning shrink-0">
@@ -252,35 +181,40 @@ export default function ShelterCiviliansPage() {
       ),
     },
     {
-      key: 'phone',
-      header: 'Phone',
+      key: 'phone', header: 'Phone',
       className: 'hidden sm:table-cell',
-      render: phone => <span className="text-sm text-text-muted">{phone ?? '—'}</span>,
+      render: phone => <span className="text-sm text-text-muted">{phone ?? 'â€”'}</span>,
     },
     {
-      key: 'is_active',
-      header: 'Status',
-      render: active => (
-        <Badge variant={active ? 'success' : 'danger'}>
-          {active ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
+      key: 'is_active', header: 'Status',
+      render: active => <Badge variant={active ? 'success' : 'danger'}>{active ? 'Active' : 'Inactive'}</Badge>,
     },
     {
-      key: 'id',
-      header: '',
+      key: 'id', header: '',
       render: (_, u) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="icon-ghost"  onClick={() => navigate(`/shelter/civilians/${u.id}`)} title="View details"><Eye size={13} /></Button>
-          <Button variant="icon-edit"   onClick={() => setPanel({ user: u })} title="Quick edit"><Pencil size={13} /></Button>
-          <Button variant="icon-delete" onClick={() => setDelTarget(u)}       title="Remove"><Trash2 size={13} /></Button>
+          <Button variant="icon-ghost"  onClick={() => navigate(`/shelter/civilians/${u.id}`)} title="View details"><Eye    size={13} /></Button>
+          <Button variant="icon-delete" onClick={() => setDelTarget(u)}                        title="Remove"><Trash2 size={13} /></Button>
         </div>
       ),
     },
   ]
 
   return (
-    <ShelterLayout title="Civilians">
+    <ShelterLayout
+      title="Civilians"
+      subtitle="Civilians registered and admitted to this shelter."
+      actions={
+        <>
+          <Button variant="secondary" onClick={() => setShowInvite(true)}>
+            <UserPlus size={14} /> Invite existing
+          </Button>
+          <Button onClick={() => setPanel({})}>
+            <Plus size={14} /> Add new
+          </Button>
+        </>
+      }
+    >
 
       {loadError && (
         <div className="text-sm text-danger bg-danger-surface border border-danger/20 rounded-xl px-4 py-3 mb-5">
@@ -288,43 +222,8 @@ export default function ShelterCiviliansPage() {
         </div>
       )}
 
-      {/* ── Pending requests / invitations ── */}
-      {requests.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Clock size={15} className="text-warning" />
-            <h2 className="text-sm font-semibold font-heading text-text">Pending</h2>
-            <span className="text-[10px] font-bold bg-warning-surface text-warning px-2 py-0.5 rounded-full">
-              {requests.length}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {requests.map(req => (
-              <RequestCard
-                key={req.id}
-                req={req}
-                loading={reqLoading}
-                onAccept={handleAccept}
-                onReject={handleReject}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Active civilians toolbar ── */}
-      <div className="flex items-center gap-3 mb-5">
-        <SearchInput
-          value={search} onChange={setSearch}
-          placeholder="Search civilians…"
-          className="flex-1 max-w-xs"
-        />
-        <Button variant="secondary" onClick={() => setShowInvite(true)}>
-          <UserPlus size={14} /> Invite existing
-        </Button>
-        <Button onClick={() => setPanel({})}>
-          <Plus size={14} /> Add new
-        </Button>
+      <div className="mb-5">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search civilians…" className="max-w-xs" />
       </div>
 
       <Table
@@ -345,22 +244,13 @@ export default function ShelterCiviliansPage() {
         }
       />
 
-      {/* Panels & modals */}
       {panel !== null && (
-        <UserPanel
-          editingUser={panel.user}
-          availableRoles={['civilian']}
-          showShelter={false}
-          onSave={handleSave}
-          onClose={() => setPanel(null)}
-        />
+        <UserPanel editingUser={panel.user} availableRoles={['civilian']} showShelter={false}
+          onSave={handleSave} onClose={() => setPanel(null)} />
       )}
 
       {showInvite && (
-        <InvitePanel
-          onClose={() => setShowInvite(false)}
-          onInvited={() => getRequests().then(res => setRequests(res.data ?? []))}
-        />
+        <InvitePanel onClose={() => setShowInvite(false)} onInvited={() => {}} />
       )}
 
       {delTarget && (
@@ -368,11 +258,13 @@ export default function ShelterCiviliansPage() {
           title="Remove civilian?"
           message={<><span className="font-semibold text-text">{delTarget.name}</span> will be removed from this shelter.</>}
           confirmLabel="Remove"
+          loading={deleting}
           onConfirm={() => handleDelete(delTarget)}
           onCancel={() => setDelTarget(null)}
         />
       )}
-
     </ShelterLayout>
   )
 }
+
+

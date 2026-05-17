@@ -7,6 +7,8 @@ use App\Http\Requests\Shelter\UpdateShelterRequest;
 use App\Http\Resources\ShelterResource;
 use App\Models\Shelter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ShelterController extends Controller
 {
@@ -64,10 +66,34 @@ class ShelterController extends Controller
             ], 422);
         }
 
-        // Unlink staff before deleting
         $shelter->staff()->update(['shelter_id' => null]);
+
+        if ($shelter->image_path) {
+            Storage::disk('public')->delete($shelter->image_path);
+        }
+
         $shelter->delete();
 
         return response()->json(['message' => 'Shelter deleted.']);
+    }
+
+    // POST /api/shelters/{shelter}/upload-image
+    public function uploadImage(Request $request, Shelter $shelter): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'file', 'image', 'max:5120'],
+        ]);
+
+        if ($shelter->image_path) {
+            Storage::disk('public')->delete($shelter->image_path);
+        }
+
+        $path = $request->file('image')->store("shelter_images/{$shelter->id}", 'public');
+        $shelter->update(['image_path' => $path]);
+
+        return response()->json([
+            'data'    => ['url' => Storage::url($path)],
+            'message' => 'Image uploaded.',
+        ]);
     }
 }

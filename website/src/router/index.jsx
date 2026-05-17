@@ -11,12 +11,15 @@ import ShelterDetailPage        from '../pages/ShelterDetailPage'
 import UsersPage                from '../pages/UsersPage'
 import CiviliansPage            from '../pages/CiviliansPage'
 import GovCivilianDetailPage    from '../pages/CivilianDetailPage'
+import GovRequestsPage          from '../pages/GovRequestsPage'
+import RoleCapabilitiesPage     from '../pages/RoleCapabilitiesPage'
 
 // Shelter dashboard pages
 import ShelterDashboardPage     from '../pages/shelter/DashboardPage'
 import ShelterCiviliansPage     from '../pages/shelter/CiviliansPage'
 import ShelterCivilianDetail    from '../pages/shelter/CivilianDetailPage'
 import ShelterStaffPage         from '../pages/shelter/StaffPage'
+import ShelterRequestsPage      from '../pages/shelter/RequestsPage'
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +38,8 @@ export const router = createBrowserRouter([
           { path: '/users',        element: <UsersPage />              },
           { path: '/civilians',    element: <CiviliansPage />          },
           { path: '/civilians/:id',element: <GovCivilianDetailPage />  },
+          { path: '/requests',          element: <GovRequestsPage />        },
+          { path: '/role-capabilities', element: <RoleCapabilitiesPage />   },
         ],
       },
 
@@ -46,6 +51,7 @@ export const router = createBrowserRouter([
           { path: '/shelter/civilians',    element: <ShelterCiviliansPage />  },
           { path: '/shelter/civilians/:id',element: <ShelterCivilianDetail /> },
           { path: '/shelter/staff',        element: <ShelterStaffPage />      },
+          { path: '/shelter/requests',     element: <ShelterRequestsPage />   },
         ],
       },
 

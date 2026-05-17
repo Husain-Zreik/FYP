@@ -46,6 +46,22 @@ class User extends Authenticatable
         };
     }
 
+    // ─── Capability check ─────────────────────────────────────────────────
+
+    /**
+     * Admins always pass; for staff roles, check the configured capability table.
+     */
+    public function hasCapability(string $capability): bool
+    {
+        if (in_array($this->role, ['government_admin', 'shelter_admin'])) {
+            return true;
+        }
+        if (in_array($this->role, ['government_staff', 'shelter_staff'])) {
+            return in_array($capability, \App\Models\RoleCapability::enabledFor($this->role));
+        }
+        return false;
+    }
+
     // ─── Role helpers ──────────────────────────────────────────────────────
 
     public function isGovernmentAdmin(): bool { return $this->role === 'government_admin'; }
@@ -61,6 +77,7 @@ class User extends Authenticatable
 
     // ─── Relationships ──────────────────────────────────────────────────────
 
-    public function shelter(): BelongsTo { return $this->belongsTo(Shelter::class); }
-    public function civilianProfile(): HasOne { return $this->hasOne(CivilianProfile::class); }
+    public function shelter(): BelongsTo           { return $this->belongsTo(Shelter::class); }
+    public function civilianProfile(): HasOne       { return $this->hasOne(CivilianProfile::class); }
+    public function privateHousing(): HasOne        { return $this->hasOne(\App\Models\CivilianPrivateHousing::class, 'civilian_id'); }
 }

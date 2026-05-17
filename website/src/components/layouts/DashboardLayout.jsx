@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Building2, Users, UserCheck,
+  LayoutDashboard, Building2, Users, UserCheck, Inbox, Settings2,
   LogOut, Shield, ChevronRight, ArrowLeft,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
@@ -11,6 +11,8 @@ const navItems = [
   { label: 'Shelters',  path: '/shelters',  icon: Building2       },
   { label: 'Staff',     path: '/users',     icon: Users           },
   { label: 'Civilians', path: '/civilians', icon: UserCheck       },
+  { label: 'Requests',  path: '/requests',          icon: Inbox      },
+  { label: 'Permissions', path: '/role-capabilities', icon: Settings2  },
 ]
 
 /*

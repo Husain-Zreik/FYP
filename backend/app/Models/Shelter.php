@@ -13,7 +13,7 @@ class Shelter extends Model
     protected $fillable = [
         'name', 'code', 'governorate', 'district', 'address',
         'latitude', 'longitude', 'capacity', 'rooms',
-        'status', 'phone', 'email', 'notes',
+        'status', 'phone', 'email', 'notes', 'image_path',
     ];
 
     protected function casts(): array

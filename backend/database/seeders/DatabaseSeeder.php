@@ -9,9 +9,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            ShelterSeeder::class,
-            UserSeeder::class,
-            CivilianProfileSeeder::class,
+            ShelterSeeder::class,           // shelters first (civilians reference them)
+            UserSeeder::class,              // users + sync shelter statuses
+            CivilianProfileSeeder::class,   // profiles, IDs, private housing
+            RoleCapabilitySeeder::class,    // default staff capabilities
         ]);
     }
 }

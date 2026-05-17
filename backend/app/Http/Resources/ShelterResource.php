@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ShelterResource extends JsonResource
 {
@@ -24,6 +25,7 @@ class ShelterResource extends JsonResource
             'phone'           => $this->phone,
             'email'           => $this->email,
             'notes'           => $this->notes,
+            'image_url'       => $this->image_path ? Storage::url($this->image_path) : null,
             'civilians_count' => $this->whenCounted('civilians_count'),
             'staff_count'     => $this->whenCounted('staff_count'),
             'staff'           => UserResource::collection($this->whenLoaded('staff')),

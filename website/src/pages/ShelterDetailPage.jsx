@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Save, MapPin, Phone, Mail, Users, UserCheck, AlertCircle } from 'lucide-react'
+import { Save, MapPin, Phone, Mail, Users, UserCheck, AlertCircle, Eye, UploadCloud, Building2 } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import ShelterPanel    from '../components/shelters/ShelterPanel'
 import { Button, Badge, Loader, Table } from '../components/ui'
-import { getShelter, updateShelter } from '../api/shelters'
+import { getShelter, updateShelter, uploadShelterImage } from '../api/shelters'
 
 const STATUS_BADGE = {
   active:           'success',
@@ -25,6 +25,49 @@ const ROLE_BADGE = {
 const ROLE_LABEL = {
   shelter_admin: 'Shelter Admin',
   shelter_staff: 'Shelter Staff',
+}
+
+function ShelterImageCard({ shelter, onUpdated }) {
+  const inputRef     = useRef()
+  const [uploading, setUploading] = useState(false)
+  const [error,     setError]     = useState(null)
+
+  async function handleFile(file) {
+    if (!file) return
+    setUploading(true); setError(null)
+    try {
+      const res = await uploadShelterImage(shelter.id, file)
+      onUpdated?.(res.data.url)
+    } catch (err) {
+      setError(err.message ?? 'Upload failed.')
+    } finally { setUploading(false) }
+  }
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-border mb-5 bg-surface-2" style={{ height: 220 }}>
+      {shelter.image_url ? (
+        <img src={shelter.image_url} alt={shelter.name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+          <Building2 size={40} className="text-border-2" />
+          <p className="text-xs text-text-subtle">No cover image</p>
+        </div>
+      )}
+
+      {error && <p className="absolute bottom-2 inset-s-2 text-xs text-danger bg-danger-surface rounded px-2 py-1">{error}</p>}
+
+      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        onChange={e => handleFile(e.target.files[0])} />
+
+      <div className="absolute bottom-3 inset-e-3">
+        <Button size="sm" variant="secondary" loading={uploading}
+          className="bg-background/90 backdrop-blur-sm"
+          onClick={() => inputRef.current.click()}>
+          <UploadCloud size={13} /> {shelter.image_url ? 'Change' : 'Add image'}
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export default function ShelterDetailPage() {
@@ -87,6 +130,15 @@ export default function ShelterDetailPage() {
       header: 'Status',
       render: active => <Badge variant={active ? 'success' : 'danger'}>{active ? 'Active' : 'Inactive'}</Badge>,
     },
+    {
+      key: 'id',
+      header: '',
+      render: (_, u) => (
+        <div className="flex justify-end">
+          <Button variant="icon-ghost" onClick={() => navigate(`/users/${u.id}`)} title="View profile"><Eye size={13} /></Button>
+        </div>
+      ),
+    },
   ]
 
   const civilianColumns = [
@@ -115,6 +167,15 @@ export default function ShelterDetailPage() {
       key: 'is_active',
       header: 'Status',
       render: active => <Badge variant={active ? 'success' : 'danger'}>{active ? 'Active' : 'Inactive'}</Badge>,
+    },
+    {
+      key: 'id',
+      header: '',
+      render: (_, u) => (
+        <div className="flex justify-end">
+          <Button variant="icon-ghost" onClick={() => navigate(`/civilians/${u.id}`)} title="View details"><Eye size={13} /></Button>
+        </div>
+      ),
     },
   ]
 
@@ -151,6 +212,8 @@ export default function ShelterDetailPage() {
         </Button>
       }
     >
+
+      <ShelterImageCard shelter={shelter} onUpdated={img => setShelter(p => ({ ...p, image_url: img }))} />
 
       <div className="grid lg:grid-cols-3 gap-5 mb-6">
 

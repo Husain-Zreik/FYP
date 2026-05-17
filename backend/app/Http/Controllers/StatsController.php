@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserResource;
+use App\Models\CivilianProfile;
 use App\Models\Shelter;
 use App\Models\ShelterRequest;
 use App\Models\User;
@@ -16,8 +17,10 @@ class StatsController extends Controller
     {
         $totalShelters    = Shelter::count();
         $activeShelters   = Shelter::where('status', 'active')->count();
-        $totalCivilians   = User::where('role', 'civilian')->count();
-        $assignedCivilians= User::where('role', 'civilian')->whereNotNull('shelter_id')->count();
+        $totalCivilians      = User::where('role', 'civilian')->count();
+        $assignedCivilians   = User::where('role', 'civilian')->whereNotNull('shelter_id')->count();
+        $privateCivilians    = CivilianProfile::where('housing_status', 'private')->count();
+        $seekingCivilians    = $totalCivilians - $assignedCivilians - $privateCivilians;
         $totalStaff       = User::whereIn('role', ['shelter_admin', 'shelter_staff'])->count();
         $pendingRequests  = ShelterRequest::where('status', 'pending')->count();
 
@@ -34,6 +37,8 @@ class StatsController extends Controller
                 'active_shelters'    => $activeShelters,
                 'total_civilians'    => $totalCivilians,
                 'assigned_civilians' => $assignedCivilians,
+                'private_civilians'  => $privateCivilians,
+                'seeking_civilians'  => max(0, $seekingCivilians),
                 'total_staff'        => $totalStaff,
                 'pending_requests'   => $pendingRequests,
                 'recent_civilians'   => UserResource::collection($recentCivilians),

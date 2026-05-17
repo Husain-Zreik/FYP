@@ -16,6 +16,10 @@ class CivilianProfile extends Model
         'gender',
         'current_location',
         'notes',
+        'id_type',
+        'id_number',
+        'id_document_path',
+        'housing_status',
     ];
 
     protected function casts(): array

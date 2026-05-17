@@ -1,21 +1,28 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, UserCheck, Users,
+  LayoutDashboard, UserCheck, Users, Inbox,
   LogOut, Shield, ChevronRight, ArrowLeft,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { useUiStore }   from '../../store/uiStore'
 import Button from '../ui/Button'
 
-const navItems = [
-  { label: 'Dashboard', path: '/shelter',            icon: LayoutDashboard },
-  { label: 'Civilians', path: '/shelter/civilians',  icon: UserCheck       },
-  { label: 'Staff',     path: '/shelter/staff',      icon: Users           },
+const BASE_NAV = [
+  { label: 'Dashboard', path: '/shelter',           icon: LayoutDashboard },
+  { label: 'Civilians', path: '/shelter/civilians', icon: UserCheck       },
+  { label: 'Staff',     path: '/shelter/staff',     icon: Users           },
 ]
 
 export default function ShelterLayout({ children, title, subtitle, back, badge, actions }) {
-  const user     = useAuthStore((s) => s.user)
-  const logout   = useAuthStore((s) => s.logout)
-  const navigate = useNavigate()
+  const user         = useAuthStore((s) => s.user)
+  const logout       = useAuthStore((s) => s.logout)
+  const navigate     = useNavigate()
+  const pendingCount = useUiStore((s) => s.shelterPendingCount)
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   const initial   = user?.name?.charAt(0).toUpperCase() ?? '?'
   const roleLabel = user?.role?.replace(/_/g, ' ') ?? ''
@@ -46,7 +53,10 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
           <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest px-3 mb-2">
             Shelter
           </p>
-          {navItems.map(({ label, path, icon: Icon }) => (
+          {[
+            ...BASE_NAV,
+            { label: 'Requests', path: '/shelter/requests', icon: Inbox, count: pendingCount },
+          ].map(({ label, path, icon: Icon, count }) => (
             <NavLink
               key={path}
               to={path}
@@ -63,6 +73,11 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
                 <>
                   <Icon size={16} className="shrink-0" />
                   <span className="flex-1">{label}</span>
+                  {count > 0 && !isActive && (
+                    <span className="text-[10px] font-bold bg-danger text-white px-1.5 py-0.5 rounded-full leading-none">
+                      {count}
+                    </span>
+                  )}
                   {isActive && <ChevronRight size={13} className="opacity-60" />}
                 </>
               )}
