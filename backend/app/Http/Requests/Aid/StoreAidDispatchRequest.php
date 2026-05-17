@@ -13,9 +13,13 @@ class StoreAidDispatchRequest extends FormRequest
 
     public function rules(): array
     {
+        $isShelter = $this->user()?->isShelterScoped();
+
         return [
-            'shelter_id'       => 'required|exists:shelters,id',
-            'civilian_id'      => 'required_if:level,shelter_civilian|nullable|exists:users,id',
+            // Government must supply the target shelter; shelter users derive it from auth
+            'shelter_id'       => $isShelter ? 'nullable|exists:shelters,id' : 'required|exists:shelters,id',
+            // Shelter users must supply the target civilian; government users don't
+            'civilian_id'      => $isShelter ? 'required|exists:users,id' : 'nullable|exists:users,id',
             'aid_category_id'  => 'required|exists:aid_categories,id',
             'quantity'         => 'required|integer|min:1',
             'notes'            => 'nullable|string|max:500',

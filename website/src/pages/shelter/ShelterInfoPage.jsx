@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { MapPin, Phone, Mail, Building2, UploadCloud, Users, UserCheck, Save, AlertCircle } from 'lucide-react'
+import { MapPin, Phone, Mail, Building2, UploadCloud, Users, UserCheck, Save, AlertCircle, Package, CheckCircle2, Clock, FileText } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
 import ShelterPanel  from '../../components/shelters/ShelterPanel'
 import { Button, Badge, Loader } from '../../components/ui'
 import { getShelter, updateShelter, uploadShelterImage } from '../../api/shelters'
 import { useAuthStore } from '../../store/authStore'
+import client from '../../api/client'
 
 const STATUS_BADGE = { active:'success', full:'warning', inactive:'muted', under_maintenance:'danger' }
 const STATUS_LABEL = { active:'Active', full:'Full', inactive:'Inactive', under_maintenance:'Maintenance' }
@@ -17,14 +18,39 @@ export default function ShelterInfoPage() {
   const [error,     setError]     = useState(null)
   const [showEdit,  setShowEdit]  = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [aidStats,  setAidStats]  = useState(null)
+  const [aidLoading,setAidLoading]= useState(true)
   const fileRef = useRef()
 
   useEffect(() => {
     if (!user?.shelter_id) return
-    getShelter(user.shelter_id)
-      .then(res => setShelter(res.data))
-      .catch(err => setError(err.message ?? 'Failed to load.'))
-      .finally(() => setLoading(false))
+    setLoading(true)
+    setAidLoading(true)
+
+    Promise.all([
+      getShelter(user.shelter_id),
+      client.get('/aid-dispatches', { params: { direction: 'incoming' } }),
+      client.get('/aid-requests'),
+    ]).then(([shelterRes, dispatchRes, requestRes]) => {
+      setShelter(shelterRes.data)
+      const dispatches = dispatchRes.data ?? []
+      const requests   = requestRes.data   ?? []
+      const accepted   = dispatches.filter(d => d.status === 'accepted')
+      const byCategory = {}
+      accepted.forEach(d => {
+        const name = d.category?.name ?? 'Unknown'
+        const unit = d.category?.unit ?? 'units'
+        byCategory[name] = { qty: (byCategory[name]?.qty ?? 0) + d.quantity, unit }
+      })
+      setAidStats({
+        pendingIncoming:  dispatches.filter(d => d.status === 'pending').length,
+        received:         accepted.length,
+        pendingRequests:  requests.filter(r => r.status === 'pending').length,
+        approvedRequests: requests.filter(r => ['approved', 'partially_approved'].includes(r.status)).length,
+        byCategory:       Object.entries(byCategory).map(([name, { qty, unit }]) => ({ name, qty, unit })),
+      })
+    }).catch(err => setError(err.message ?? 'Failed to load.'))
+      .finally(() => { setLoading(false); setAidLoading(false) })
   }, [user?.shelter_id])
 
   async function handleSave(formData) {
@@ -124,6 +150,50 @@ export default function ShelterInfoPage() {
             <p className="text-[11px] text-text-muted">Rooms</p>
           </div>
         </div>
+      </div>
+
+      {/* Aid Overview */}
+      <div className="bg-background rounded-2xl border border-border p-5 mb-5">
+        <h2 className="text-sm font-semibold font-heading text-text mb-4">Aid Overview</h2>
+        {aidLoading ? (
+          <div className="flex justify-center py-4"><Loader size="sm" /></div>
+        ) : aidStats ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Pending Delivery',  value: aidStats.pendingIncoming,  color: 'text-warning',    bg: 'bg-warning-surface', icon: Clock        },
+                { label: 'Received',          value: aidStats.received,         color: 'text-success',    bg: 'bg-success-surface', icon: CheckCircle2  },
+                { label: 'Pending Requests',  value: aidStats.pendingRequests,  color: 'text-secondary',  bg: 'bg-secondary/10',    icon: FileText      },
+                { label: 'Approved Requests', value: aidStats.approvedRequests, color: 'text-text-muted', bg: 'bg-surface-2',       icon: Package       },
+              ].map(({ label, value, color, bg, icon: Icon }) => (
+                <div key={label} className="bg-surface rounded-xl p-3 flex items-center gap-2.5">
+                  <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center shrink-0`}>
+                    <Icon size={15} className={color} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold font-heading text-text leading-none">{value}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5">{label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {aidStats.byCategory.length > 0 && (
+              <div>
+                <p className="text-xs text-text-subtle mb-2">Received by category</p>
+                <div className="flex flex-wrap gap-2">
+                  {aidStats.byCategory.map(c => (
+                    <div key={c.name} className="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-full border border-border">
+                      <span className="text-xs text-text">{c.name}</span>
+                      <span className="text-xs font-semibold text-text">{c.qty}</span>
+                      <span className="text-[11px] text-text-subtle">{c.unit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* Info cards */}

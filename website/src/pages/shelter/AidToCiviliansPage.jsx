@@ -4,7 +4,7 @@ import {
   Send, CalendarClock, AlertCircle, Check, X,
 } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Button, Badge, Loader, SlidePanel, Select } from '../../components/ui'
+import { Button, Badge, Loader, SlidePanel, Select, Table } from '../../components/ui'
 import { getAidDispatches, createAidDispatch, acceptAidDispatch, rejectAidDispatch } from '../../api/aidDispatches'
 import { getAidSchedules, createAidSchedule, updateAidSchedule, deleteAidSchedule, dispatchSchedule } from '../../api/aidSchedules'
 import { getAidCategories } from '../../api/aidCategories'
@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore'
 import client from '../../api/client'
 
 const STATUS_BADGE  = { pending: 'warning', accepted: 'success', rejected: 'danger' }
+const STATUS_LABEL  = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
 const FREQ_OPTS = [
   { value: 'weekly',    label: 'Weekly'    },
   { value: 'biweekly',  label: 'Bi-weekly' },
@@ -33,7 +34,7 @@ function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
   )
 }
 
-function formatDate(str) {
+function fmt(str) {
   if (!str) return '—'
   return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
@@ -63,8 +64,7 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
       getAidCategories(),
     ])
       .then(([u, c]) => {
-        const allCivilians = u.data ?? []
-        setCivilians(shelterId ? allCivilians.filter(x => x.shelter_id === shelterId) : allCivilians)
+        setCivilians(u.data ?? [])
         setCategories(c.data ?? [])
       })
       .catch(() => {})
@@ -105,6 +105,18 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
       subtitle="Dispatch supplies to a civilian in your shelter"
       onClose={onClose}
       width="max-w-md"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            loading={saving}
+            disabled={!civilianId || !categoryId || !quantity}
+            onClick={handleSave}
+          >
+            Send Aid
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -135,16 +147,6 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button
-            loading={saving}
-            disabled={!civilianId || !categoryId || !quantity}
-            onClick={handleSave}
-          >
-            Send Aid
-          </Button>
-        </div>
       </div>
     </SlidePanel>
   )
@@ -157,8 +159,8 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
   const [categoryId, setCategoryId] = useState('')
   const [quantity,   setQuantity]   = useState('')
   const [frequency,  setFrequency]  = useState('')
-  const [startDate,  setStartDate]  = useState('')
-  const [endDate,    setEndDate]    = useState('')
+  const [startsAt,   setStartsAt]   = useState('')
+  const [endsAt,     setEndsAt]     = useState('')
   const [notes,      setNotes]      = useState('')
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState(null)
@@ -169,8 +171,7 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
       getAidCategories(),
     ])
       .then(([u, c]) => {
-        const allCivilians = u.data ?? []
-        setCivilians(shelterId ? allCivilians.filter(x => x.shelter_id === shelterId) : allCivilians)
+        setCivilians(u.data ?? [])
         setCategories(c.data ?? [])
       })
       .catch(() => {})
@@ -195,9 +196,9 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
         aid_category_id: Number(categoryId),
         quantity:        Number(quantity),
         frequency,
-        start_date: startDate,
-        end_date:   endDate || null,
-        notes:      notes   || null,
+        starts_at: startsAt,
+        ends_at:   endsAt || null,
+        notes:     notes  || null,
       })
       onCreated(res.data)
       onClose()
@@ -214,6 +215,18 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
       subtitle="Set up recurring aid deliveries to a civilian"
       onClose={onClose}
       width="max-w-md"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            loading={saving}
+            disabled={!civilianId || !categoryId || !quantity || !frequency || !startsAt}
+            onClick={handleSave}
+          >
+            Create Schedule
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -238,8 +251,8 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
           <label className="block text-sm font-semibold text-text mb-1.5">Start Date</label>
           <input
             type="date"
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
+            value={startsAt}
+            onChange={e => setStartsAt(e.target.value)}
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
           />
         </div>
@@ -247,8 +260,8 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
           <label className="block text-sm font-semibold text-text mb-1.5">End Date <span className="text-text-subtle font-normal">(optional)</span></label>
           <input
             type="date"
-            value={endDate}
-            onChange={e => setEndDate(e.target.value)}
+            value={endsAt}
+            onChange={e => setEndsAt(e.target.value)}
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
           />
         </div>
@@ -261,74 +274,13 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button
-            loading={saving}
-            disabled={!civilianId || !categoryId || !quantity || !frequency || !startDate}
-            onClick={handleSave}
-          >
-            Create Schedule
-          </Button>
-        </div>
       </div>
     </SlidePanel>
   )
 }
 
-function DispatchCard({ dispatch, onMarkAccepted, onMarkRejected }) {
-  const category = dispatch.aid_category ?? {}
-  const civilian = dispatch.civilian ?? dispatch.recipient ?? {}
-
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <CivilianAvatar name={civilian.name} />
-          <div className="min-w-0">
-            <p className="font-semibold text-text truncate">{civilian.name ?? '—'}</p>
-            <p className="text-xs text-text-muted truncate">{civilian.phone ?? civilian.email ?? ''}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant={STATUS_BADGE[dispatch.status] ?? 'muted'}>{dispatch.status}</Badge>
-          <p className="text-xs text-text-muted">{formatDate(dispatch.created_at)}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap mb-1">
-        <p className="text-sm text-text">{category.name ?? '—'}</p>
-        <p className="text-sm text-text-muted">{dispatch.quantity} {category.unit ?? 'units'}</p>
-      </div>
-
-      {dispatch.notes && (
-        <p className="text-sm text-text-muted italic">{dispatch.notes}</p>
-      )}
-
-      {dispatch.status === 'accepted' && (
-        <p className="text-xs text-success mt-1">Received: {formatDate(dispatch.received_at)}</p>
-      )}
-
-      {dispatch.status === 'rejected' && dispatch.rejection_reason && (
-        <p className="text-xs text-danger mt-1">{dispatch.rejection_reason}</p>
-      )}
-
-      {dispatch.status === 'pending' && (
-        <div className="flex gap-2 mt-3">
-          <Button size="sm" onClick={() => onMarkAccepted(dispatch)}>
-            <Check size={13} /> Mark Accepted
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => onMarkRejected(dispatch)}>
-            <X size={13} /> Reject
-          </Button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function AcceptDispatchPanel({ dispatch, onClose, onAccepted }) {
-  const category = dispatch.aid_category ?? {}
+  const category = dispatch.category ?? {}
   const today    = new Date().toISOString().split('T')[0]
 
   const [receivedAt, setReceivedAt] = useState(today)
@@ -359,6 +311,12 @@ function AcceptDispatchPanel({ dispatch, onClose, onAccepted }) {
       subtitle={`${category.name ?? '—'} — ${dispatch.quantity} ${category.unit ?? 'units'}`}
       onClose={onClose}
       width="max-w-sm"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} disabled={!receivedAt} onClick={handleSave}>Confirm Receipt</Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -384,19 +342,15 @@ function AcceptDispatchPanel({ dispatch, onClose, onAccepted }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} disabled={!receivedAt} onClick={handleSave}>Confirm Receipt</Button>
-        </div>
       </div>
     </SlidePanel>
   )
 }
 
 function RejectDispatchPanel({ dispatch, onClose, onRejected }) {
-  const [reason,  setReason]  = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [error,   setError]   = useState(null)
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState(null)
 
   async function handleSave() {
     setError(null)
@@ -417,6 +371,12 @@ function RejectDispatchPanel({ dispatch, onClose, onRejected }) {
       title="Reject Dispatch"
       onClose={onClose}
       width="max-w-sm"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} variant="danger" onClick={handleSave}>Reject</Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -433,18 +393,14 @@ function RejectDispatchPanel({ dispatch, onClose, onRejected }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} variant="danger" onClick={handleSave}>Reject</Button>
-        </div>
       </div>
     </SlidePanel>
   )
 }
 
 function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
-  const category = schedule.aid_category ?? {}
-  const civilian = schedule.civilian ?? schedule.recipient ?? {}
+  const category  = schedule.category ?? {}
+  const civilian  = schedule.civilian ?? {}
   const freqLabel = FREQ_OPTS.find(f => f.value === schedule.frequency)?.label ?? schedule.frequency
 
   const [dispatching, setDispatching] = useState(false)
@@ -495,8 +451,8 @@ function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
       </div>
 
       <div className="flex items-center gap-2 mb-2">
-        <CivilianAvatar name={civilian.name} />
-        <p className="text-sm text-text-muted">{civilian.name ?? '—'}</p>
+        <CivilianAvatar name={schedule.civilian?.name} />
+        <p className="text-sm text-text-muted">{schedule.civilian?.name ?? '—'}</p>
       </div>
 
       <p className="text-sm text-text">
@@ -504,7 +460,7 @@ function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
       </p>
 
       <p className="text-xs text-text-subtle mt-1">
-        Last sent: {schedule.last_sent_at ? formatDate(schedule.last_sent_at) : 'Never sent'}
+        Last sent: {schedule.last_sent_at ? fmt(schedule.last_sent_at) : 'Never sent'}
       </p>
 
       <div className="mt-1">
@@ -530,8 +486,27 @@ function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
   )
 }
 
+const DISPATCH_EMPTY_NODE = (
+  <>
+    <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
+      <Package size={20} className="text-text-subtle" />
+    </div>
+    <p className="text-sm font-medium text-text">No dispatches sent to civilians yet.</p>
+    <p className="text-xs text-text-muted">Use &ldquo;Send Aid to Civilian&rdquo; to get started.</p>
+  </>
+)
+
+const SCHEDULE_EMPTY_NODE = (
+  <>
+    <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
+      <CalendarClock size={20} className="text-text-subtle" />
+    </div>
+    <p className="text-sm font-medium text-text">No schedules set up yet.</p>
+  </>
+)
+
 export default function AidToCiviliansPage() {
-  const user     = useAuthStore((s) => s.user)
+  const user      = useAuthStore((s) => s.user)
   const shelterId = user?.shelter_id ?? null
 
   const [activeTab,      setActiveTab]      = useState('dispatches')
@@ -569,11 +544,6 @@ export default function AidToCiviliansPage() {
     loadSchedules()
   }, [])
 
-  function handleRefresh() {
-    if (activeTab === 'dispatches') loadDispatches()
-    else loadSchedules()
-  }
-
   function handleDispatchUpdated(updated) {
     setDispatches(prev => prev.map(d => d.id === updated.id ? updated : d))
   }
@@ -582,30 +552,111 @@ export default function AidToCiviliansPage() {
   const acceptedCount = dispatches.filter(d => d.status === 'accepted').length
   const rejectedCount = dispatches.filter(d => d.status === 'rejected').length
 
+  const dispatchColumns = [
+    {
+      key: 'civilian',
+      header: 'Civilian',
+      render: (_, d) => (
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-warning-surface flex items-center justify-center text-xs font-bold text-warning shrink-0">
+            {(d.civilian?.name ?? '?').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-text">{d.civilian?.name ?? '—'}</p>
+            <p className="text-xs text-text-muted">{d.civilian?.phone ?? d.civilian?.email ?? ''}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Aid Type',
+      render: (_, d) => (
+        <span className="text-sm text-text">{d.category?.name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'quantity',
+      header: 'Quantity',
+      render: (_, d) => (
+        <span className="text-sm font-medium text-text">
+          {d.quantity} <span className="font-normal text-text-muted">{d.category?.unit ?? 'units'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'dispatched_at',
+      header: 'Date Sent',
+      className: 'hidden md:table-cell',
+      render: (_, d) => (
+        <span className="text-sm text-text-muted">{fmt(d.dispatched_at ?? d.created_at)}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (_, d) => (
+        <div>
+          <Badge variant={STATUS_BADGE[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+          {d.status === 'accepted' && (
+            <p className="text-xs text-success mt-0.5">{fmt(d.received_at)}</p>
+          )}
+          {d.status === 'rejected' && d.rejection_reason && (
+            <p className="text-xs text-danger mt-0.5 max-w-32 truncate">{d.rejection_reason}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'id',
+      header: '',
+      render: (_, d) => d.status === 'pending' ? (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button size="sm" onClick={() => setAcceptTarget(d)}>
+            <Check size={13} /> Confirm
+          </Button>
+          <Button size="sm" variant="danger" onClick={() => setRejectTarget(d)}>
+            <X size={13} />
+          </Button>
+        </div>
+      ) : null,
+    },
+  ]
+
   return (
     <ShelterLayout
       title="Aid to Civilians"
       subtitle="Send supplies and manage recurring aid for shelter civilians"
       actions={
-        <Button variant="secondary" size="sm" onClick={handleRefresh}>
-          <RefreshCw size={14} /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => activeTab === 'dispatches' ? loadDispatches() : loadSchedules()}>
+            <RefreshCw size={14} />
+          </Button>
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1">
+            {[
+              { key: 'dispatches', label: 'Dispatches to Civilians' },
+              { key: 'schedules',  label: 'Schedules'               },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'bg-background text-text shadow-sm border border-border'
+                    : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       }
     >
-      <div className="flex border border-border rounded-xl overflow-hidden mb-6">
-        {[{ key: 'dispatches', label: 'Dispatches to Civilians' }, { key: 'schedules', label: 'Schedules' }].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-2 text-sm font-medium transition-colors cursor-pointer ${
-              activeTab === tab.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-surface text-text-muted hover:text-text'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <StatCard label="Pending"  value={pendingCount}  icon={Clock}        iconColor="text-warning" iconBg="bg-warning-surface" />
+        <StatCard label="Accepted" value={acceptedCount} icon={CheckCircle2} iconColor="text-success" iconBg="bg-success-surface" />
+        <StatCard label="Rejected" value={rejectedCount} icon={XCircle}      iconColor="text-danger"  iconBg="bg-danger-surface"  />
       </div>
 
       {activeTab === 'dispatches' && (
@@ -616,43 +667,19 @@ export default function AidToCiviliansPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-5">
-            <div />
+          <div className="flex items-center justify-end mb-5">
             <Button onClick={() => setShowDispPanel(true)}>
               <Plus size={15} /> Send Aid to Civilian
             </Button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <StatCard label="Pending"  value={pendingCount}  icon={Clock}        iconColor="text-warning" iconBg="bg-warning-surface" />
-            <StatCard label="Accepted" value={acceptedCount} icon={CheckCircle2} iconColor="text-success" iconBg="bg-success-surface" />
-            <StatCard label="Rejected" value={rejectedCount} icon={XCircle}      iconColor="text-danger"  iconBg="bg-danger-surface"  />
-          </div>
-
-          {loadingD ? (
-            <div className="flex items-center justify-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-              <Loader size="lg" />
-            </div>
-          ) : dispatches.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-              <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
-                <Package size={20} className="text-text-subtle" />
-              </div>
-              <p className="text-sm font-medium text-text mb-1">No dispatches sent to civilians yet.</p>
-              <p className="text-xs text-text-muted">Use &ldquo;Send Aid to Civilian&rdquo; to get started.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {dispatches.map(d => (
-                <DispatchCard
-                  key={d.id}
-                  dispatch={d}
-                  onMarkAccepted={setAcceptTarget}
-                  onMarkRejected={setRejectTarget}
-                />
-              ))}
-            </div>
-          )}
+          <Table
+            columns={dispatchColumns}
+            data={dispatches}
+            loading={loadingD}
+            emptyNode={DISPATCH_EMPTY_NODE}
+            pageSize={10}
+          />
         </>
       )}
 
@@ -664,8 +691,7 @@ export default function AidToCiviliansPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-5">
-            <div />
+          <div className="flex items-center justify-end mb-5">
             <Button onClick={() => setShowSchedPanel(true)}>
               <Plus size={15} /> New Schedule
             </Button>
@@ -677,10 +703,7 @@ export default function AidToCiviliansPage() {
             </div>
           ) : schedules.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-              <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
-                <CalendarClock size={20} className="text-text-subtle" />
-              </div>
-              <p className="text-sm font-medium text-text mb-1">No schedules set up yet.</p>
+              {SCHEDULE_EMPTY_NODE}
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">

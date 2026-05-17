@@ -159,12 +159,12 @@ function ReviewPanel({ need, onClose, onReviewed }) {
         {need.status !== 'pending' && need.status !== 'in_review' && (
           <div className="bg-surface rounded-xl p-4 space-y-2">
             <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Review</p>
-            {need.reviewer && <Row label="Reviewed by" value={need.reviewer.name} />}
+            {need.reviewed_by_name && <Row label="Reviewed by" value={need.reviewed_by_name} />}
             {need.reviewed_at && <Row label="Date" value={formatDate(need.reviewed_at)} />}
-            {need.notes && (
+            {need.shelter_notes && (
               <div className="pt-1">
                 <p className="text-xs text-text-muted mb-1">Notes</p>
-                <p className="text-sm text-text leading-relaxed">{need.notes}</p>
+                <p className="text-sm text-text leading-relaxed">{need.shelter_notes}</p>
               </div>
             )}
           </div>

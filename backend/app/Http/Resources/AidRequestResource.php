@@ -31,6 +31,8 @@ class AidRequestResource extends JsonResource
             'government_notes'   => $this->government_notes,
             'reviewed_by_name'   => $this->whenLoaded('reviewer', fn () => $this->reviewer->name),
             'reviewed_at'        => $this->reviewed_at?->format('Y-m-d H:i:s'),
+            'received_at'            => $this->received_at?->format('Y-m-d'),
+            'shelter_received_notes' => $this->shelter_received_notes,
             'created_at'         => $this->created_at,
         ];
     }

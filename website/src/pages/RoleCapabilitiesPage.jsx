@@ -22,10 +22,13 @@ function RoleSection({ roleKey, capabilities, onChange, saving, saved, onSave })
   return (
     <div className="bg-background rounded-2xl border border-border overflow-hidden">
       {/* Role header */}
-      <div className="flex items-start justify-between px-6 py-5 border-b border-border">
-        <div>
-          <h2 className="text-base font-semibold font-heading text-text">{meta.label}</h2>
-          <p className="text-xs text-text-muted mt-0.5">{meta.description}</p>
+      <div className="flex items-start justify-between px-6 py-5 bg-surface border-b border-border">
+        <div className="flex items-start gap-4">
+          <div className="w-1 self-stretch rounded-full bg-secondary shrink-0" />
+          <div>
+            <h2 className="text-base font-semibold font-heading text-text">{meta.label}</h2>
+            <p className="text-xs text-text-muted mt-0.5">{meta.description}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {saved && <span className="text-xs text-success font-medium flex items-center gap-1"><CheckCircle size={13} />Saved</span>}
@@ -38,17 +41,22 @@ function RoleSection({ roleKey, capabilities, onChange, saving, saved, onSave })
       {/* Capability groups */}
       <div className="divide-y divide-border">
         {groups.map(group => {
-          const groupCaps = capabilities.filter(c => c.group === group)
+          const groupCaps    = capabilities.filter(c => c.group === group)
+          const enabledInGroup = groupCaps.filter(c => c.enabled).length
           return (
             <div key={group} className="px-6 py-4">
-              <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest mb-3">
+              <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest mb-3 flex items-center gap-2">
                 {group}
+                <span className="text-[10px] font-normal text-text-subtle normal-case">
+                  {enabledInGroup}/{groupCaps.length}
+                </span>
               </p>
               <div className="space-y-3">
                 {groupCaps.map(cap => (
                   <Toggle
                     key={cap.key}
                     label={cap.label}
+                    description={cap.description}
                     value={cap.enabled}
                     onChange={v => onChange(cap.key, v)}
                   />

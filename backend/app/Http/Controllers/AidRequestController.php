@@ -130,4 +130,34 @@ class AidRequestController extends Controller
 
         abort(403);
     }
+
+    public function fulfill(Request $request, AidRequest $aidRequest): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_if(! $user->isShelterScoped() || $aidRequest->shelter_id !== $user->shelter_id, 403);
+        abort_if(
+            ! in_array($aidRequest->status, ['approved', 'partially_approved']),
+            422,
+            'Only approved requests can be marked as received.'
+        );
+
+        $request->validate([
+            'received_at'            => ['required', 'date', 'before_or_equal:today'],
+            'shelter_received_notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $aidRequest->update([
+            'status'                 => 'fulfilled',
+            'received_at'            => $request->received_at,
+            'shelter_received_notes' => $request->shelter_received_notes,
+        ]);
+
+        $aidRequest->load('shelter', 'category', 'reviewer');
+
+        return response()->json([
+            'data'    => new AidRequestResource($aidRequest),
+            'message' => 'Receipt confirmed. Aid request marked as fulfilled.',
+        ]);
+    }
 }

@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Plus, Clock, CheckCircle, Package, AlertCircle } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Button, Badge, Loader, SlidePanel, Select, Input } from '../../components/ui'
-import { getAidRequests, createAidRequest } from '../../api/aidRequests'
+import { Modal, Table, Button, Badge, Loader, SlidePanel, Select, Input, FilterBar } from '../../components/ui'
+import { getAidRequests, createAidRequest, reviewAidRequest, fulfillAidRequest } from '../../api/aidRequests'
 import { getAidCategories } from '../../api/aidCategories'
 
 const URGENCY_BADGE = { critical: 'danger', high: 'warning', medium: 'info', low: 'muted' }
 const STATUS_BADGE  = { pending: 'muted', approved: 'success', partially_approved: 'warning', rejected: 'danger', fulfilled: 'success' }
 const STATUS_LABEL  = { pending: 'Pending', approved: 'Approved', partially_approved: 'Partially Approved', rejected: 'Rejected', fulfilled: 'Fulfilled' }
-const STATUS_DOT    = { pending: 'bg-text-muted', approved: 'bg-success', partially_approved: 'bg-warning', rejected: 'bg-danger', fulfilled: 'bg-success' }
 
 const URGENCY_OPTS = [
   { value: 'low',      label: 'Low — not urgent, next available batch' },
@@ -16,6 +15,11 @@ const URGENCY_OPTS = [
   { value: 'high',     label: 'High — needed within a few days'        },
   { value: 'critical', label: 'Critical — immediate need'              },
 ]
+
+function fmt(str) {
+  if (!str) return '—'
+  return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
   return (
@@ -31,58 +35,11 @@ function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
   )
 }
 
-function RequestCard({ req }) {
-  function formatDate(str) {
-    if (!str) return '—'
-    return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  const dotColor = STATUS_DOT[req.status] ?? 'bg-text-muted'
-
+function InfoRow({ label, value }) {
   return (
-    <div className="bg-background border border-border rounded-2xl p-5 hover:border-border-2 transition-all">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-text">{req.aid_category?.name ?? '—'}</p>
-          <Badge variant={URGENCY_BADGE[req.urgency] ?? 'muted'}>{req.urgency}</Badge>
-          <Badge variant={STATUS_BADGE[req.status] ?? 'muted'}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-          <span className="text-xs text-text-subtle">{STATUS_LABEL[req.status] ?? req.status}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 flex-wrap mb-1">
-        <p className="text-sm text-text-muted">
-          Requested: <span className="text-text font-medium">{req.quantity_requested} {req.aid_category?.unit ?? 'units'}</span>
-        </p>
-        {(req.status === 'approved' || req.status === 'partially_approved') && req.quantity_approved != null && (
-          <>
-            <span className="text-text-subtle">→</span>
-            <p className="text-sm text-success font-medium">
-              Approved: {req.quantity_approved} {req.aid_category?.unit ?? 'units'}
-            </p>
-          </>
-        )}
-      </div>
-
-      {req.reason && (
-        <p className="text-sm text-text-muted mt-1 line-clamp-2">{req.reason}</p>
-      )}
-
-      {req.government_notes && (
-        <blockquote className="border-s-2 border-secondary ps-3 text-sm text-text-muted italic mt-2">
-          {req.government_notes}
-        </blockquote>
-      )}
-
-      <div className="flex items-center justify-between mt-3">
-        <p className="text-xs text-text-subtle">{formatDate(req.created_at)}</p>
-        {req.reviewer && (
-          <p className="text-xs text-text-subtle">Reviewed by {req.reviewer.name}</p>
-        )}
-      </div>
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-xs text-text-muted shrink-0">{label}</span>
+      <span className="text-xs font-medium text-text text-right">{value ?? '—'}</span>
     </div>
   )
 }
@@ -187,11 +144,21 @@ function NewRequestPanel({ categories, onClose, onSaved }) {
 }
 
 export default function AidRequestsPage() {
-  const [requests,   setRequests]   = useState([])
-  const [categories, setCategories] = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
-  const [showPanel,  setShowPanel]  = useState(false)
+  const [requests,       setRequests]       = useState([])
+  const [categories,     setCategories]     = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState(null)
+  const [showPanel,      setShowPanel]      = useState(false)
+  const [search,         setSearch]         = useState('')
+  const [statusFilter,   setStatusFilter]   = useState('')
+  const [urgencyFilter,  setUrgencyFilter]  = useState('')
+  const [catFilter,      setCatFilter]      = useState('')
+  const [receiptTarget,  setReceiptTarget]  = useState(null)
+  const [receivedAt,     setReceivedAt]     = useState('')
+  const [notes,          setNotes]          = useState('')
+  const [savingReceipt,  setSavingReceipt]  = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     setLoading(true)
@@ -211,18 +178,123 @@ export default function AidRequestsPage() {
     setRequests(prev => [req, ...prev])
   }
 
-  const pending  = requests.filter(r => r.status === 'pending').length
-  const approved = requests.filter(r => r.status === 'approved' || r.status === 'partially_approved').length
+  async function handleCancel(req) {
+    try {
+      const res = await reviewAidRequest(req.id, { status: 'rejected', government_notes: 'Cancelled by shelter' })
+      setRequests(prev => prev.map(r => r.id === res.data.id ? res.data : r))
+    } catch (err) {
+      setError(err.message ?? 'Failed to cancel request.')
+    }
+  }
+
+  async function handleFulfill() {
+    setSavingReceipt(true)
+    try {
+      const res = await fulfillAidRequest(receiptTarget.id, {
+        received_at: receivedAt,
+        shelter_received_notes: notes || null,
+      })
+      setRequests(prev => prev.map(r => r.id === res.data.id ? res.data : r))
+      setReceiptTarget(null)
+    } catch (err) {
+      setError(err.message ?? 'Failed.')
+    } finally {
+      setSavingReceipt(false)
+    }
+  }
+
+  const pending   = requests.filter(r => r.status === 'pending').length
+  const approved  = requests.filter(r => r.status === 'approved' || r.status === 'partially_approved').length
+  const fulfilled = requests.filter(r => r.status === 'fulfilled').length
+
+  const filtered = requests.filter(r => {
+    const q = search.toLowerCase()
+    return (
+      (!search || (r.category?.name ?? '').toLowerCase().includes(q)) &&
+      (!catFilter     || String(r.aid_category_id) === catFilter) &&
+      (!urgencyFilter || r.urgency === urgencyFilter) &&
+      (!statusFilter  || r.status  === statusFilter)
+    )
+  })
+
+  const columns = [
+    {
+      key: 'category',
+      header: 'Category',
+      render: (_, req) => (
+        <span className="text-sm font-medium text-text">{req.category?.name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'quantity_requested',
+      header: 'Requested',
+      render: (_, req) => (
+        <span className="text-sm text-text">
+          {req.quantity_requested} <span className="text-text-muted text-xs">{req.category?.unit ?? 'units'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'quantity_approved',
+      header: 'Approved',
+      className: 'hidden md:table-cell',
+      render: (_, req) => req.quantity_approved != null ? (
+        <span className="text-sm text-success font-medium">
+          {req.quantity_approved} <span className="text-xs font-normal">{req.category?.unit ?? ''}</span>
+        </span>
+      ) : (
+        <span className="text-sm text-text-subtle">—</span>
+      ),
+    },
+    {
+      key: 'urgency',
+      header: 'Urgency',
+      render: (_, req) => (
+        <Badge variant={URGENCY_BADGE[req.urgency]}>
+          {req.urgency?.charAt(0).toUpperCase() + req.urgency?.slice(1)}
+        </Badge>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (_, req) => (
+        <Badge variant={STATUS_BADGE[req.status]}>{STATUS_LABEL[req.status]}</Badge>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Submitted',
+      className: 'hidden lg:table-cell',
+      render: (_, req) => (
+        <span className="text-sm text-text-muted">{fmt(req.created_at)}</span>
+      ),
+    },
+    {
+      key: 'id',
+      header: '',
+      render: (_, req) => {
+        if (['approved', 'partially_approved'].includes(req.status)) {
+          return (
+            <Button size="sm" onClick={() => { setReceiptTarget(req); setReceivedAt(today); setNotes('') }}>
+              Confirm Receipt
+            </Button>
+          )
+        }
+        if (req.status === 'pending') {
+          return (
+            <Button size="sm" variant="danger" onClick={() => handleCancel(req)}>Cancel</Button>
+          )
+        }
+        return null
+      },
+    },
+  ]
 
   return (
     <ShelterLayout
       title="Aid Requests"
       subtitle="Request supplies and aid from the government"
-      actions={
-        <Button onClick={() => setShowPanel(true)}>
-          <Plus size={14} /> New Request
-        </Button>
-      }
     >
       {error && (
         <div className="flex gap-2.5 text-sm text-danger bg-danger-surface border border-danger/20 rounded-xl px-4 py-3 mb-5">
@@ -231,32 +303,64 @@ export default function AidRequestsPage() {
       )}
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <StatCard label="Pending"  value={pending}            icon={Clock}        iconColor="text-warning"    iconBg="bg-warning-surface" />
-        <StatCard label="Approved" value={approved}           icon={CheckCircle}  iconColor="text-success"    iconBg="bg-success-surface" />
-        <StatCard label="Total"    value={requests.length}    icon={Package}      iconColor="text-text-muted" iconBg="bg-surface-2"       />
+        <StatCard label="Pending"   value={pending}   icon={Clock}        iconColor="text-warning"    iconBg="bg-warning-surface" />
+        <StatCard label="Approved"  value={approved}  icon={CheckCircle}  iconColor="text-success"    iconBg="bg-success-surface" />
+        <StatCard label="Fulfilled" value={fulfilled}  icon={Package}      iconColor="text-text-muted" iconBg="bg-surface-2"       />
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(320px, 55vh, 520px)' }}>
-          <Loader size="lg" />
-        </div>
-      ) : requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(320px, 55vh, 520px)' }}>
-          <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
-            <Package size={20} className="text-text-subtle" />
-          </div>
-          <p className="text-sm font-medium text-text mb-1">No requests yet</p>
-          <p className="text-xs text-text-muted max-w-xs">
-            Submit your first aid request to the government.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {requests.map(req => (
-            <RequestCard key={req.id} req={req} />
-          ))}
-        </div>
-      )}
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        filters={[
+          {
+            value: catFilter,
+            onChange: setCatFilter,
+            options: [
+              { value: '', label: 'All categories' },
+              ...categories.map(c => ({ value: String(c.id), label: c.name })),
+            ],
+            className: 'w-44',
+          },
+          {
+            value: urgencyFilter,
+            onChange: setUrgencyFilter,
+            options: [
+              { value: '',         label: 'All urgency' },
+              { value: 'critical', label: 'Critical'    },
+              { value: 'high',     label: 'High'        },
+              { value: 'medium',   label: 'Medium'      },
+              { value: 'low',      label: 'Low'         },
+            ],
+            className: 'w-36',
+          },
+          {
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: '',                  label: 'All statuses'        },
+              { value: 'pending',           label: 'Pending'             },
+              { value: 'approved',          label: 'Approved'            },
+              { value: 'partially_approved',label: 'Partially Approved'  },
+              { value: 'rejected',          label: 'Rejected'            },
+              { value: 'fulfilled',         label: 'Fulfilled'           },
+            ],
+            className: 'w-44',
+          },
+        ]}
+        actions={
+          <Button onClick={() => setShowPanel(true)}>
+            <Plus size={14} /> New Request
+          </Button>
+        }
+      />
+
+      <Table
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyText="No aid requests found."
+        pageSize={10}
+      />
 
       {showPanel && (
         <NewRequestPanel
@@ -264,6 +368,57 @@ export default function AidRequestsPage() {
           onClose={() => setShowPanel(false)}
           onSaved={handleSaved}
         />
+      )}
+
+      {receiptTarget && (
+        <Modal
+          title="Confirm Receipt"
+          subtitle={`${receiptTarget.category?.name} — ${receiptTarget.quantity_approved ?? receiptTarget.quantity_requested} ${receiptTarget.category?.unit ?? 'units'}`}
+          onClose={() => setReceiptTarget(null)}
+          width="max-w-sm"
+          footer={
+            <div className="flex gap-3 justify-end">
+              <Button variant="ghost" onClick={() => setReceiptTarget(null)}>Cancel</Button>
+              <Button loading={savingReceipt} disabled={!receivedAt} onClick={handleFulfill}>Confirm Receipt</Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <div className="bg-surface rounded-xl p-4 space-y-2">
+              <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Request Details</p>
+              <InfoRow label="Category" value={receiptTarget.category?.name} />
+              <InfoRow label="Approved" value={`${receiptTarget.quantity_approved ?? receiptTarget.quantity_requested} ${receiptTarget.category?.unit ?? 'units'}`} />
+              {receiptTarget.government_notes && <InfoRow label="Gov. Note" value={receiptTarget.government_notes} />}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-text mb-1.5">
+                Date Received <span className="text-danger">*</span>
+                <span className="block text-xs font-normal text-text-subtle mt-0.5">When did your shelter physically receive this aid?</span>
+              </label>
+              <input
+                type="date"
+                value={receivedAt}
+                max={today}
+                onChange={e => setReceivedAt(e.target.value)}
+                className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-text mb-1.5">
+                Notes <span className="text-text-subtle font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Any notes about the received items..."
+                className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
+              />
+            </div>
+          </div>
+        </Modal>
       )}
     </ShelterLayout>
   )

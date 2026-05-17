@@ -143,6 +143,31 @@ class AidScheduleController extends Controller
         $this->authorizeAccess($user, $aidSchedule);
         abort_if(! $aidSchedule->is_active, 422, 'This schedule is not active.');
 
+        if ($aidSchedule->level === 'government_shelter') {
+            $availableQty = \App\Models\AidBatch::where('aid_category_id', $aidSchedule->aid_category_id)
+                ->sum('available_quantity');
+
+            if ($aidSchedule->quantity > $availableQty) {
+                return response()->json([
+                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
+                    'available' => $availableQty,
+                ], 422);
+            }
+
+            $remaining = $aidSchedule->quantity;
+            $batches = \App\Models\AidBatch::where('aid_category_id', $aidSchedule->aid_category_id)
+                ->where('available_quantity', '>', 0)
+                ->orderBy('received_at')
+                ->get();
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+                $deduct = min($remaining, $batch->available_quantity);
+                $batch->decrement('available_quantity', $deduct);
+                $remaining -= $deduct;
+            }
+        }
+
         $dispatch = AidDispatch::create([
             'level'           => $aidSchedule->level,
             'dispatched_by'   => $user->id,

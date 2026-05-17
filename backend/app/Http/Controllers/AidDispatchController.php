@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Aid\AcceptAidDispatchRequest;
 use App\Http\Requests\Aid\StoreAidDispatchRequest;
 use App\Http\Resources\AidDispatchResource;
+use App\Models\AidBatch;
 use App\Models\AidDispatch;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -55,6 +56,29 @@ class AidDispatchController extends Controller
         $user = $request->user();
 
         if (in_array($user->role, ['government_admin', 'government_staff'])) {
+            $availableQty = AidBatch::where('aid_category_id', $request->aid_category_id)
+                ->sum('available_quantity');
+
+            if ($request->quantity > $availableQty) {
+                return response()->json([
+                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
+                    'available' => $availableQty,
+                ], 422);
+            }
+
+            $remaining = $request->quantity;
+            $batches = AidBatch::where('aid_category_id', $request->aid_category_id)
+                ->where('available_quantity', '>', 0)
+                ->orderBy('received_at')
+                ->get();
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+                $deduct = min($remaining, $batch->available_quantity);
+                $batch->decrement('available_quantity', $deduct);
+                $remaining -= $deduct;
+            }
+
             $dispatch = AidDispatch::create([
                 'level'           => 'government_shelter',
                 'dispatched_by'   => $user->id,
@@ -135,6 +159,23 @@ class AidDispatchController extends Controller
             'responded_by'     => $user->id,
             'rejection_reason' => $request->rejection_reason,
         ]);
+
+        if ($aidDispatch->level === 'government_shelter') {
+            $remaining = $aidDispatch->quantity;
+            $batches = AidBatch::where('aid_category_id', $aidDispatch->aid_category_id)
+                ->orderBy('received_at')
+                ->get();
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+                $canAdd = $batch->quantity - $batch->available_quantity;
+                if ($canAdd > 0) {
+                    $add = min($remaining, $canAdd);
+                    $batch->increment('available_quantity', $add);
+                    $remaining -= $add;
+                }
+            }
+        }
 
         $aidDispatch->load('shelter', 'civilian', 'category', 'dispatcher', 'responder');
 

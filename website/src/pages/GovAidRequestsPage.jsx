@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Clock, CheckCircle, XCircle, Package, Building2, AlertCircle, Check, X, Pencil } from 'lucide-react'
+import { RefreshCw, Clock, CheckCircle, XCircle, Package, AlertCircle, Check, X, Pencil } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Button, Badge, Loader, SlidePanel, SearchInput, Select } from '../components/ui'
+import { Table, Button, Badge, Loader, SlidePanel, SearchInput, Select } from '../components/ui'
 import { getAidRequests, reviewAidRequest } from '../api/aidRequests'
 import { getAidCategories } from '../api/aidCategories'
 import { useUiStore } from '../store/uiStore'
 
-const URGENCY_BADGE  = { critical: 'danger', high: 'warning', medium: 'info', low: 'muted' }
-const STATUS_BADGE   = { pending: 'muted', approved: 'success', partially_approved: 'warning', rejected: 'danger', fulfilled: 'success' }
-const STATUS_LABEL   = { pending: 'Pending', approved: 'Approved', partially_approved: 'Partially Approved', rejected: 'Rejected', fulfilled: 'Fulfilled' }
-const URGENCY_BG     = { critical: 'bg-danger-surface text-danger', high: 'bg-warning-surface text-warning', medium: 'bg-secondary/10 text-secondary', low: 'bg-surface-2 text-text-muted' }
+const STATUS_BADGE  = { pending: 'muted', approved: 'success', partially_approved: 'warning', rejected: 'danger', fulfilled: 'success' }
+const STATUS_LABEL  = { pending: 'Pending', approved: 'Approved', partially_approved: 'Partially Approved', rejected: 'Rejected', fulfilled: 'Fulfilled' }
+const URGENCY_BADGE = { critical: 'danger', high: 'warning', medium: 'info', low: 'muted' }
+const URGENCY_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
+
+function fmt(d) {
+  return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+}
 
 const URGENCY_OPTS = [
-  { value: '',         label: 'All urgency'   },
-  { value: 'critical', label: 'Critical'       },
-  { value: 'high',     label: 'High'           },
-  { value: 'medium',   label: 'Medium'         },
-  { value: 'low',      label: 'Low'            },
+  { value: '',         label: 'All urgency' },
+  { value: 'critical', label: 'Critical'    },
+  { value: 'high',     label: 'High'        },
+  { value: 'medium',   label: 'Medium'      },
+  { value: 'low',      label: 'Low'         },
 ]
 
 const STATUS_OPTS = [
@@ -52,13 +56,13 @@ function Row({ label, value }) {
 }
 
 function ReviewPanel({ req, onClose, onReviewed }) {
-  const [qty,      setQty]      = useState(String(req.quantity_requested ?? ''))
-  const [notes,    setNotes]    = useState('')
-  const [saving,   setSaving]   = useState(null)
-  const [error,    setError]    = useState(null)
+  const [qty,    setQty]    = useState(String(req.quantity_requested ?? ''))
+  const [notes,  setNotes]  = useState('')
+  const [saving, setSaving] = useState(null)
+  const [error,  setError]  = useState(null)
 
   const isPending = req.status === 'pending'
-  const unit      = req.aid_category?.unit ?? ''
+  const unit      = req.category?.unit ?? ''
 
   async function submit(status) {
     setError(null)
@@ -66,7 +70,7 @@ function ReviewPanel({ req, onClose, onReviewed }) {
     try {
       const payload = {
         status,
-        government_notes: notes || null,
+        government_notes:  notes || null,
         quantity_approved: status === 'rejected' ? null : Number(qty),
       }
       const res = await reviewAidRequest(req.id, payload)
@@ -79,15 +83,10 @@ function ReviewPanel({ req, onClose, onReviewed }) {
     }
   }
 
-  function formatDate(str) {
-    if (!str) return '—'
-    return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
   return (
     <SlidePanel
       title={req.shelter?.name ?? 'Request'}
-      subtitle={`Submitted ${formatDate(req.created_at)}`}
+      subtitle={`Submitted ${fmt(req.created_at)}`}
       onClose={onClose}
       width="max-w-lg"
     >
@@ -100,10 +99,10 @@ function ReviewPanel({ req, onClose, onReviewed }) {
 
         <div className="bg-surface rounded-2xl p-4 space-y-3">
           <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Request Details</p>
-          <Row label="Category"   value={req.aid_category?.name} />
-          <Row label="Requested"  value={`${req.quantity_requested} ${unit}`} />
-          <Row label="Urgency"    value={<Badge variant={URGENCY_BADGE[req.urgency] ?? 'muted'}>{req.urgency}</Badge>} />
-          <Row label="Status"     value={<Badge variant={STATUS_BADGE[req.status] ?? 'muted'}>{STATUS_LABEL[req.status] ?? req.status}</Badge>} />
+          <Row label="Category"  value={req.category?.name} />
+          <Row label="Requested" value={`${req.quantity_requested} ${unit}`} />
+          <Row label="Urgency"   value={<Badge variant={URGENCY_BADGE[req.urgency] ?? 'muted'}>{req.urgency}</Badge>} />
+          <Row label="Status"    value={<Badge variant={STATUS_BADGE[req.status] ?? 'muted'}>{STATUS_LABEL[req.status] ?? req.status}</Badge>} />
           {req.reason && (
             <div className="pt-1">
               <p className="text-xs text-text-muted mb-1">Reason</p>
@@ -115,8 +114,8 @@ function ReviewPanel({ req, onClose, onReviewed }) {
         {req.status !== 'pending' && (
           <div className="bg-surface rounded-2xl p-4 space-y-3">
             <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Review Details</p>
-            <Row label="Reviewed by"   value={req.reviewer?.name} />
-            <Row label="Reviewed on"   value={formatDate(req.reviewed_at)} />
+            <Row label="Reviewed by"  value={req.reviewed_by_name} />
+            <Row label="Reviewed on"  value={fmt(req.reviewed_at)} />
             {req.quantity_approved != null && (
               <Row label="Approved qty" value={`${req.quantity_approved} ${unit}`} />
             )}
@@ -188,81 +187,23 @@ function ReviewPanel({ req, onClose, onReviewed }) {
   )
 }
 
-function RequestCard({ req, onReview }) {
-  function formatDate(str) {
-    if (!str) return '—'
-    return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  const urgencyBg = URGENCY_BG[req.urgency] ?? 'bg-surface-2 text-text-muted'
-
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5 hover:border-border-2 hover:shadow-sm transition-all">
-      <div className="flex items-start gap-4">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${urgencyBg}`}>
-          <Building2 size={16} />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <p className="font-semibold text-text leading-snug">{req.shelter?.name ?? '—'}</p>
-              <p className="text-xs text-text-muted">{req.shelter?.governorate ?? ''}</p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <p className="text-xs text-text-muted">{formatDate(req.created_at)}</p>
-              <Button size="sm" variant="secondary" onClick={() => onReview(req)}>Review</Button>
-              {req.status === 'pending' && (
-                <Button size="sm" variant="danger" onClick={() => onReview(req)}>Reject</Button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <p className="text-sm text-text">{req.aid_category?.name ?? '—'}</p>
-            <p className="text-xs text-text-muted">· {req.quantity_requested} {req.aid_category?.unit ?? 'units'} requested</p>
-            <Badge variant={URGENCY_BADGE[req.urgency] ?? 'muted'}>{req.urgency}</Badge>
-            <Badge variant={STATUS_BADGE[req.status] ?? 'muted'}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
-          </div>
-
-          {req.reason && (
-            <p className="text-sm text-text-muted mt-2 line-clamp-1">{req.reason}</p>
-          )}
-
-          {req.quantity_approved != null && (
-            <p className="text-xs text-success mt-1">Approved: {req.quantity_approved} {req.aid_category?.unit ?? 'units'}</p>
-          )}
-
-          {req.government_notes && (
-            <p className="text-xs text-text-muted mt-1">{req.government_notes}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function GovAidRequestsPage() {
   const setGovPendingAidCount = useUiStore((s) => s.setGovPendingAidCount)
 
-  const [requests,       setRequests]       = useState([])
-  const [categories,     setCategories]     = useState([])
-  const [loading,        setLoading]        = useState(true)
-  const [error,          setError]          = useState(null)
-  const [selected,       setSelected]       = useState(null)
-  const [search,         setSearch]         = useState('')
-  const [catFilter,      setCatFilter]      = useState('')
-  const [urgencyFilter,  setUrgencyFilter]  = useState('')
-  const [statusFilter,   setStatusFilter]   = useState('')
+  const [requests,      setRequests]      = useState([])
+  const [categories,    setCategories]    = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState(null)
+  const [selected,      setSelected]      = useState(null)
+  const [search,        setSearch]        = useState('')
+  const [catFilter,     setCatFilter]     = useState('')
+  const [urgencyFilter, setUrgencyFilter] = useState('')
+  const [statusFilter,  setStatusFilter]  = useState('')
 
   function loadAll() {
     setError(null)
     setLoading(true)
-
-    Promise.all([
-      getAidRequests(),
-      getAidCategories(),
-    ])
+    Promise.all([getAidRequests(), getAidCategories()])
       .then(([reqRes, catRes]) => {
         const reqs = reqRes.data ?? []
         setRequests(reqs)
@@ -303,6 +244,74 @@ export default function GovAidRequestsPage() {
     )
   })
 
+  const columns = [
+    {
+      key: 'shelter',
+      header: 'Shelter',
+      render: (_, r) => (
+        <div>
+          <p className="font-medium text-text">{r.shelter?.name ?? '—'}</p>
+          <p className="text-xs text-text-muted">{r.shelter?.governorate ?? ''}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: (_, r) => <span className="text-sm text-text">{r.category?.name ?? '—'}</span>,
+    },
+    {
+      key: 'quantity_requested',
+      header: 'Requested',
+      render: (_, r) => (
+        <span className="text-sm font-medium text-text">
+          {r.quantity_requested} <span className="font-normal text-text-muted">{r.category?.unit ?? 'units'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'quantity_approved',
+      header: 'Approved',
+      className: 'hidden md:table-cell',
+      render: (_, r) => r.quantity_approved != null ? (
+        <span className="text-sm text-success font-medium">
+          {r.quantity_approved} <span className="font-normal">{r.category?.unit ?? 'units'}</span>
+        </span>
+      ) : (
+        <span className="text-sm text-text-subtle">—</span>
+      ),
+    },
+    {
+      key: 'urgency',
+      header: 'Urgency',
+      render: (_, r) => (
+        <Badge variant={URGENCY_BADGE[r.urgency] ?? 'muted'}>{URGENCY_LABEL[r.urgency] ?? r.urgency}</Badge>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (_, r) => (
+        <Badge variant={STATUS_BADGE[r.status] ?? 'muted'}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Submitted',
+      className: 'hidden lg:table-cell',
+      render: (_, r) => <span className="text-sm text-text-muted">{fmt(r.created_at)}</span>,
+    },
+    {
+      key: 'id',
+      header: '',
+      render: (_, r) => (
+        <div className="flex justify-end">
+          <Button size="sm" variant="secondary" onClick={() => setSelected(r)}>Review</Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <DashboardLayout
       title="Aid Requests"
@@ -338,25 +347,13 @@ export default function GovAidRequestsPage() {
         <Select value={statusFilter}  onChange={setStatusFilter}  options={STATUS_OPTS}  className="w-44" />
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(320px, 55vh, 520px)' }}>
-          <Loader size="lg" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(320px, 55vh, 520px)' }}>
-          <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
-            <Package size={20} className="text-text-subtle" />
-          </div>
-          <p className="text-sm font-medium text-text mb-1">No requests found</p>
-          <p className="text-xs text-text-muted">Try adjusting your filters.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(req => (
-            <RequestCard key={req.id} req={req} onReview={setSelected} />
-          ))}
-        </div>
-      )}
+      <Table
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyText="No requests found. Try adjusting your filters."
+        pageSize={10}
+      />
 
       {selected && (
         <ReviewPanel

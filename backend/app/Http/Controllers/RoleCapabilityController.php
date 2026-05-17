@@ -11,7 +11,7 @@ class RoleCapabilityController extends Controller
     // GET /api/role-capabilities
     public function index(): JsonResponse
     {
-        $config = config('capabilities');
+        $config = config('capabilities', []);
         $stored = RoleCapability::all()->groupBy('role');
 
         $result = [];
@@ -21,10 +21,11 @@ class RoleCapabilityController extends Controller
             $result[$role] = array_map(function (array $cap) use ($roleStored) {
                 $record = $roleStored->get($cap['key']);
                 return [
-                    'key'     => $cap['key'],
-                    'label'   => $cap['label'],
-                    'group'   => $cap['group'],
-                    'enabled' => $record ? $record->enabled : true, // default on
+                    'key'         => $cap['key'],
+                    'label'       => $cap['label'],
+                    'description' => $cap['description'] ?? null,
+                    'group'       => $cap['group'],
+                    'enabled'     => $record ? $record->enabled : true,
                 ];
             }, $capabilities);
         }

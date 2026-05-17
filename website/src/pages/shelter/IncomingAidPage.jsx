@@ -4,12 +4,13 @@ import {
   Check, X, AlertCircle,
 } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Button, Badge, Loader, SlidePanel, Select } from '../../components/ui'
+import { Button, Badge, SlidePanel, Select, Table } from '../../components/ui'
 import { getAidDispatches, acceptAidDispatch, rejectAidDispatch } from '../../api/aidDispatches'
 import { useUiStore } from '../../store/uiStore'
 
-const STATUS_BADGE = { pending: 'warning', accepted: 'success', rejected: 'danger' }
-const STATUS_OPTS  = [
+const STATUS_BADGE  = { pending: 'warning', accepted: 'success', rejected: 'danger' }
+const STATUS_LABEL  = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
+const STATUS_OPTS   = [
   { value: '',         label: 'All statuses' },
   { value: 'pending',  label: 'Pending'      },
   { value: 'accepted', label: 'Accepted'     },
@@ -30,14 +31,14 @@ function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
   )
 }
 
-function formatDate(str) {
+function fmt(str) {
   if (!str) return '—'
   return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function AcceptPanel({ dispatch, onClose, onAccepted }) {
-  const category = dispatch.aid_category ?? {}
-  const today    = new Date().toISOString().split('T')[0]
+  const category  = dispatch.category ?? {}
+  const today     = new Date().toISOString().split('T')[0]
 
   const [receivedAt, setReceivedAt] = useState(today)
   const [notes,      setNotes]      = useState('')
@@ -67,6 +68,14 @@ function AcceptPanel({ dispatch, onClose, onAccepted }) {
       subtitle={`${category.name ?? '—'} — ${dispatch.quantity} ${category.unit ?? 'units'}`}
       onClose={onClose}
       width="max-w-sm"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} disabled={!receivedAt} onClick={handleSave}>
+            Confirm Receipt
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -97,21 +106,15 @@ function AcceptPanel({ dispatch, onClose, onAccepted }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} disabled={!receivedAt} onClick={handleSave}>
-            Confirm Receipt
-          </Button>
-        </div>
       </div>
     </SlidePanel>
   )
 }
 
 function DeclinePanel({ dispatch, onClose, onDeclined }) {
-  const [reason,  setReason]  = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [error,   setError]   = useState(null)
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState(null)
 
   async function handleSave() {
     setError(null)
@@ -132,6 +135,14 @@ function DeclinePanel({ dispatch, onClose, onDeclined }) {
       title="Decline Aid Delivery"
       onClose={onClose}
       width="max-w-sm"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} variant="danger" onClick={handleSave}>
+            Decline
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {error && (
@@ -148,69 +159,20 @@ function DeclinePanel({ dispatch, onClose, onDeclined }) {
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
           />
         </div>
-        <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} variant="danger" onClick={handleSave}>
-            Decline
-          </Button>
-        </div>
       </div>
     </SlidePanel>
   )
 }
 
-function DispatchCard({ dispatch, onAccept, onDecline }) {
-  const category = dispatch.aid_category ?? {}
-
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="font-semibold text-text">{category.name ?? '—'}</p>
-          <p className="text-secondary font-medium text-sm">{dispatch.quantity} {category.unit ?? 'units'}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant={STATUS_BADGE[dispatch.status] ?? 'muted'}>{dispatch.status}</Badge>
-          <p className="text-xs text-text-muted">{formatDate(dispatch.created_at)}</p>
-        </div>
-      </div>
-
-      {dispatch.dispatcher && (
-        <p className="text-xs text-text-muted mb-1">Dispatched by {dispatch.dispatcher.name ?? dispatch.dispatcher_name ?? '—'}</p>
-      )}
-
-      {dispatch.notes && (
-        <p className="text-sm text-text-muted italic mb-1">{dispatch.notes}</p>
-      )}
-
-      {dispatch.aid_schedule_id && (
-        <div className="flex items-center gap-1 text-xs text-text-subtle mb-1">
-          <CalendarClock size={12} />
-          Part of recurring schedule
-        </div>
-      )}
-
-      {dispatch.status === 'accepted' && (
-        <p className="text-xs text-success">Received: {formatDate(dispatch.received_at)}</p>
-      )}
-
-      {dispatch.status === 'rejected' && dispatch.rejection_reason && (
-        <p className="text-xs text-danger">{dispatch.rejection_reason}</p>
-      )}
-
-      {dispatch.status === 'pending' && (
-        <div className="flex gap-2 mt-3">
-          <Button size="sm" onClick={() => onAccept(dispatch)}>
-            <Check size={13} /> Accept & Confirm Receipt
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => onDecline(dispatch)}>
-            <X size={13} /> Decline
-          </Button>
-        </div>
-      )}
+const EMPTY_NODE = (
+  <>
+    <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
+      <Package size={20} className="text-text-subtle" />
     </div>
-  )
-}
+    <p className="text-sm font-medium text-text">No aid dispatches yet.</p>
+    <p className="text-xs text-text-muted">Aid sent to your shelter will appear here.</p>
+  </>
+)
 
 export default function IncomingAidPage() {
   const setShelterPendingIncomingAidCount = useUiStore((s) => s.setShelterPendingIncomingAidCount)
@@ -253,6 +215,76 @@ export default function IncomingAidPage() {
 
   const filtered = dispatches.filter(d => !statusFilter || d.status === statusFilter)
 
+  const columns = [
+    {
+      key: 'category',
+      header: 'Aid Type',
+      render: (_, d) => (
+        <div>
+          <p className="text-sm font-medium text-text">{d.category?.name ?? '—'}</p>
+          {d.aid_schedule_id && (
+            <span className="text-[10px] text-text-subtle flex items-center gap-1 mt-0.5">
+              <CalendarClock size={10} /> Recurring
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'quantity',
+      header: 'Quantity',
+      render: (_, d) => (
+        <span className="text-sm font-medium text-text">
+          {d.quantity} <span className="font-normal text-text-muted">{d.category?.unit ?? 'units'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'dispatcher_name',
+      header: 'Sent By',
+      className: 'hidden md:table-cell',
+      render: (_, d) => (
+        <span className="text-sm text-text-muted">{d.dispatcher_name ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'dispatched_at',
+      header: 'Dispatched',
+      render: (_, d) => (
+        <span className="text-sm text-text-muted">{fmt(d.dispatched_at ?? d.created_at)}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (_, d) => (
+        <div>
+          <Badge variant={STATUS_BADGE[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+          {d.status === 'accepted' && d.received_at && (
+            <p className="text-xs text-success mt-0.5">Received {fmt(d.received_at)}</p>
+          )}
+          {d.status === 'rejected' && d.rejection_reason && (
+            <p className="text-xs text-danger mt-0.5 max-w-40 truncate">{d.rejection_reason}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'id',
+      header: '',
+      render: (_, d) => d.status === 'pending' ? (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button size="sm" onClick={() => setAcceptTarget(d)}>
+            <Check size={13} /> Accept
+          </Button>
+          <Button size="sm" variant="danger" onClick={() => setDeclineTarget(d)}>
+            <X size={13} />
+          </Button>
+        </div>
+      ) : null,
+    },
+  ]
+
   return (
     <ShelterLayout
       title="Incoming Aid"
@@ -276,32 +308,16 @@ export default function IncomingAidPage() {
       </div>
 
       <div className="mb-5">
-        <Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTS} className="w-40" />
+        <Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTS} className="w-44" />
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-          <Loader size="lg" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center bg-background border border-border rounded-2xl" style={{ minHeight: 'clamp(280px, 50vh, 480px)' }}>
-          <div className="w-12 h-12 bg-surface rounded-2xl flex items-center justify-center mb-3">
-            <Package size={20} className="text-text-subtle" />
-          </div>
-          <p className="text-sm font-medium text-text mb-1">No aid has been dispatched to your shelter yet.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(d => (
-            <DispatchCard
-              key={d.id}
-              dispatch={d}
-              onAccept={setAcceptTarget}
-              onDecline={setDeclineTarget}
-            />
-          ))}
-        </div>
-      )}
+      <Table
+        columns={columns}
+        data={filtered}
+        loading={loading}
+        emptyNode={EMPTY_NODE}
+        pageSize={10}
+      />
 
       {acceptTarget && (
         <AcceptPanel

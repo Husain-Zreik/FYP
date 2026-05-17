@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Package, Archive, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Button, Badge, Loader, Input, Select, SlidePanel } from '../components/ui'
+import { Button, Badge, Loader, Input, Select, SlidePanel, Table, FilterBar } from '../components/ui'
 import { getAidCategories } from '../api/aidCategories'
 import { getAidBatches, createAidBatch } from '../api/aidBatches'
 import { getAidRequests } from '../api/aidRequests'
+
+function fmt(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' }
 
 function StatCard({ label, value, icon: Icon, iconColor, iconBg, loading }) {
   return (
@@ -78,7 +80,7 @@ function LogBatchPanel({ categories, onClose, onSaved }) {
       const res = await createAidBatch({
         aid_category_id: Number(categoryId),
         source,
-        quantity_received: Number(quantity),
+        quantity: Number(quantity),
         received_at: dateReceived,
         notes: notes || null,
       })
@@ -95,7 +97,7 @@ function LogBatchPanel({ categories, onClose, onSaved }) {
 
   return (
     <SlidePanel
-      title="Log Incoming Aid"
+      title="Record Delivery"
       subtitle="Record a new batch of received aid"
       onClose={onClose}
       footer={
@@ -169,6 +171,8 @@ export default function AidInventoryPage() {
   const [loadingBatches,  setLoadingBatches]  = useState(true)
   const [error,           setError]           = useState(null)
   const [showPanel,       setShowPanel]       = useState(false)
+  const [batchSearch,     setBatchSearch]     = useState('')
+  const [batchCatFilter,  setBatchCatFilter]  = useState('')
 
   function loadAll() {
     setError(null)
@@ -192,13 +196,13 @@ export default function AidInventoryPage() {
 
   useEffect(() => { loadAll() }, [])
 
-  const totalReceived = batches.reduce((sum, b) => sum + (b.quantity_received ?? 0), 0)
+  const totalReceived  = batches.reduce((sum, b) => sum + (b.quantity ?? 0), 0)
   const totalAvailable = batches.reduce((sum, b) => sum + (b.available_quantity ?? 0), 0)
 
   const categoryTotals = categories.map(cat => {
-    const catBatches  = batches.filter(b => b.aid_category_id === cat.id)
-    const received    = catBatches.reduce((s, b) => s + (b.quantity_received ?? 0), 0)
-    const available   = catBatches.reduce((s, b) => s + (b.available_quantity ?? 0), 0)
+    const catBatches = batches.filter(b => b.aid_category_id === cat.id)
+    const received   = catBatches.reduce((s, b) => s + (b.quantity ?? 0), 0)
+    const available  = catBatches.reduce((s, b) => s + (b.available_quantity ?? 0), 0)
     return { category: cat, totalReceived: received, available }
   })
 
@@ -206,21 +210,63 @@ export default function AidInventoryPage() {
     new Date(b.received_at ?? b.created_at) - new Date(a.received_at ?? a.created_at)
   )
 
+  const filteredBatches = sortedBatches.filter(b => {
+    const matchSearch = !batchSearch ||
+      (b.source ?? '').toLowerCase().includes(batchSearch.toLowerCase())
+    const matchCat = !batchCatFilter || String(b.aid_category_id) === batchCatFilter
+    return matchSearch && matchCat
+  })
+
+  const BATCH_COLUMNS = [
+    {
+      key: 'received_at',
+      header: 'Date',
+      render: (_, b) => <span className="text-sm text-text-muted">{fmt(b.received_at ?? b.created_at)}</span>,
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: (_, b) => <span className="text-sm font-medium text-text">{b.category?.name ?? '—'}</span>,
+    },
+    {
+      key: 'source',
+      header: 'Source',
+      render: (_, b) => <span className="text-sm text-text-muted">{b.source ?? '—'}</span>,
+    },
+    {
+      key: 'quantity',
+      header: 'Received',
+      render: (_, b) => (
+        <span className="text-sm text-text">
+          {(b.quantity ?? 0).toLocaleString()} <span className="text-text-subtle text-xs">{b.category?.unit ?? ''}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'available_quantity',
+      header: 'Available',
+      render: (_, b) => {
+        const qty   = b.quantity ?? 0
+        const avail = b.available_quantity ?? 0
+        const unit  = b.category?.unit ?? ''
+        const color = avail === qty ? 'text-success' : avail > 0 ? 'text-warning' : 'text-danger'
+        return (
+          <span className={`text-sm font-medium ${color}`}>
+            {avail.toLocaleString()} <span className="text-text-subtle font-normal text-xs">{unit}</span>
+          </span>
+        )
+      },
+    },
+    {
+      key: 'creator_name',
+      header: 'Logged By',
+      className: 'hidden lg:table-cell',
+      render: (_, b) => <span className="text-sm text-text-muted">{b.creator_name ?? '—'}</span>,
+    },
+  ]
+
   function handleBatchSaved(batch) {
     setBatches(prev => [batch, ...prev])
-  }
-
-  function formatDate(str) {
-    if (!str) return '—'
-    return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  function getCategoryName(id) {
-    return categories.find(c => c.id === id)?.name ?? '—'
-  }
-
-  function getCategoryUnit(id) {
-    return categories.find(c => c.id === id)?.unit ?? ''
   }
 
   return (
@@ -233,7 +279,7 @@ export default function AidInventoryPage() {
             <RefreshCw size={14} /> Refresh
           </Button>
           <Button onClick={() => setShowPanel(true)}>
-            <Plus size={14} /> Log Incoming Aid
+            <Plus size={14} /> Record Delivery
           </Button>
         </div>
       }
@@ -320,51 +366,27 @@ export default function AidInventoryPage() {
           <p className="text-xs text-text-muted mt-0.5">All incoming aid receipts</p>
         </div>
 
-        {loadingBatches ? (
-          <div className="flex items-center justify-center bg-background border border-border rounded-2xl" style={{ minHeight: '200px' }}>
-            <Loader size="lg" />
-          </div>
-        ) : sortedBatches.length === 0 ? (
-          <div className="flex items-center justify-center bg-background border border-border rounded-2xl py-16">
-            <p className="text-sm text-text-muted">No batches logged yet.</p>
-          </div>
-        ) : (
-          <div className="bg-background rounded-2xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface">
-                  {['Date', 'Category', 'Source', 'Received', 'Available'].map(h => (
-                    <th key={h} className="text-start px-5 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {sortedBatches.map(batch => {
-                  const unit     = getCategoryUnit(batch.aid_category_id)
-                  const received = batch.quantity_received ?? 0
-                  const avail    = batch.available_quantity ?? 0
-                  const availColor = avail === received
-                    ? 'text-success'
-                    : avail > 0
-                      ? 'text-warning'
-                      : 'text-danger'
+        <FilterBar
+          search={batchSearch}
+          onSearch={setBatchSearch}
+          filters={[{
+            value: batchCatFilter,
+            onChange: setBatchCatFilter,
+            options: [
+              { value: '', label: 'All categories' },
+              ...categories.map(c => ({ value: String(c.id), label: c.name })),
+            ],
+            className: 'w-44',
+          }]}
+        />
 
-                  return (
-                    <tr key={batch.id} className="hover:bg-surface/50 transition-colors">
-                      <td className="px-5 py-3.5 text-text-muted">{formatDate(batch.received_at ?? batch.created_at)}</td>
-                      <td className="px-5 py-3.5 font-medium text-text">{getCategoryName(batch.aid_category_id)}</td>
-                      <td className="px-5 py-3.5 text-text-muted">{batch.source ?? '—'}</td>
-                      <td className="px-5 py-3.5 text-text">{received.toLocaleString()} <span className="text-text-subtle">{unit}</span></td>
-                      <td className={`px-5 py-3.5 font-medium ${availColor}`}>{avail.toLocaleString()} <span className="text-text-subtle font-normal">{unit}</span></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <Table
+          columns={BATCH_COLUMNS}
+          data={filteredBatches}
+          loading={loadingBatches}
+          emptyText="No batches logged yet."
+          pageSize={15}
+        />
       </div>
 
       {showPanel && (

@@ -45,6 +45,7 @@ Route::middleware('auth:api')->group(function () {
     // Civilian join requests
     Route::prefix('shelter-requests')->group(function () {
         Route::get ('/',                         [ShelterRequestController::class, 'index']);
+        Route::post('/',                         [ShelterRequestController::class, 'store']);
         Route::post('invite',                    [ShelterRequestController::class, 'invite']);
         Route::patch('{shelterRequest}/accept',  [ShelterRequestController::class, 'accept']);
         Route::patch('{shelterRequest}/reject',  [ShelterRequestController::class, 'reject']);
@@ -65,6 +66,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Aid — shelter requests to government
     Route::apiResource('aid-requests', AidRequestController::class)->except(['destroy']);
+    Route::patch('aid-requests/{aidRequest}/fulfill', [AidRequestController::class, 'fulfill']);
 
     // Aid — civilian needs
     Route::apiResource('civilian-needs', CivilianNeedController::class)->except(['destroy']);

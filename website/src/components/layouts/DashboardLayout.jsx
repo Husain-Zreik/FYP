@@ -45,30 +45,35 @@ export default function DashboardLayout({ children, title, subtitle, back, badge
     {
       label: 'Overview',
       items: [
-        { label: 'Dashboard',   path: '/dashboard', icon: LayoutDashboard },
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, end: true },
       ],
     },
     {
-      label: 'Operations',
+      label: 'People',
       items: [
-        { label: 'Shelters',   path: '/shelters',   icon: Building2  },
-        { label: 'Civilians',  path: '/civilians',  icon: UserCheck  },
-        { label: 'Staff',      path: '/users',      icon: Users      },
+        { label: 'Shelters',  path: '/shelters',  icon: Building2 },
+        { label: 'Civilians', path: '/civilians', icon: UserCheck },
+        { label: 'Staff',     path: '/users',     icon: Users     },
+      ],
+    },
+    {
+      label: 'Requests',
+      items: [
+        { label: 'Join Requests', path: '/requests',     icon: Inbox   },
+        { label: 'Aid Requests',  path: '/aid/requests', icon: Package, badge: govPendingAidCount },
+      ],
+    },
+    {
+      label: 'Aid',
+      items: [
+        { label: 'Inventory', path: '/aid/inventory', icon: Archive },
+        { label: 'Send Aid',  path: '/aid/send',      icon: Send    },
       ],
     },
     {
       label: 'System',
       items: [
-        { label: 'Requests',    path: '/requests',          icon: Inbox     },
         { label: 'Permissions', path: '/role-capabilities', icon: Settings2 },
-      ],
-    },
-    {
-      label: 'Aid Management',
-      items: [
-        { label: 'Aid Inventory', path: '/aid/inventory', icon: Archive },
-        { label: 'Send Aid',      path: '/aid/send',      icon: Send    },
-        { label: 'Aid Requests',  path: '/aid/requests',  icon: Package, badge: govPendingAidCount },
       ],
     },
   ]

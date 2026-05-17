@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Save, MapPin, Phone, Mail, Users, UserCheck, AlertCircle, Eye, UploadCloud, Building2 } from 'lucide-react'
+import { Save, MapPin, Phone, Mail, Users, UserCheck, AlertCircle, Eye, UploadCloud, Building2, Package, CheckCircle2, Clock, FileText, ChevronDown } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import ShelterPanel    from '../components/shelters/ShelterPanel'
-import { Button, Badge, Loader, Table } from '../components/ui'
+import { Button, Badge, Loader, Table, FilterBar } from '../components/ui'
 import { getShelter, updateShelter, uploadShelterImage } from '../api/shelters'
+import client from '../api/client'
 
 const STATUS_BADGE = {
   active:           'success',
@@ -74,16 +75,45 @@ export default function ShelterDetailPage() {
   const { id }   = useParams()
   const navigate = useNavigate()
 
-  const [shelter,   setShelter]   = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [error,     setError]     = useState(null)
-  const [showEdit,  setShowEdit]  = useState(false)
+  const [shelter,          setShelter]          = useState(null)
+  const [loading,          setLoading]          = useState(true)
+  const [error,            setError]            = useState(null)
+  const [showEdit,         setShowEdit]         = useState(false)
+  const [aidStats,         setAidStats]         = useState(null)
+  const [aidLoading,       setAidLoading]       = useState(true)
+  const [staffSearch,      setStaffSearch]      = useState('')
+  const [civilianSearch,   setCivilianSearch]   = useState('')
+  const [staffExpanded,    setStaffExpanded]    = useState(true)
+  const [civilianExpanded, setCivilianExpanded] = useState(true)
 
   useEffect(() => {
-    getShelter(id)
-      .then(res => setShelter(res.data))
-      .catch(err => setError(err.message ?? 'Failed to load shelter.'))
-      .finally(() => setLoading(false))
+    Promise.all([
+      getShelter(id),
+      client.get('/aid-dispatches', { params: { shelter_id: id } }),
+      client.get('/aid-requests',   { params: { shelter_id: id } }),
+    ]).then(([shelterRes, dispatchRes, requestRes]) => {
+      setShelter(shelterRes.data)
+      const dispatches = dispatchRes.data ?? []
+      const requests   = requestRes.data   ?? []
+      const accepted   = dispatches.filter(d => d.status === 'accepted')
+      const pending    = dispatches.filter(d => d.status === 'pending')
+      const byCategory = {}
+      accepted.forEach(d => {
+        const name = d.category?.name ?? 'Unknown'
+        const unit = d.category?.unit ?? 'units'
+        byCategory[name] = { qty: (byCategory[name]?.qty ?? 0) + d.quantity, unit }
+      })
+      setAidStats({
+        totalDispatched: dispatches.length,
+        accepted:        accepted.length,
+        pendingIncoming: pending.length,
+        rejected:        dispatches.filter(d => d.status === 'rejected').length,
+        pendingRequests: requests.filter(r => r.status === 'pending').length,
+        totalRequests:   requests.length,
+        byCategory:      Object.entries(byCategory).map(([name, { qty, unit }]) => ({ name, qty, unit })),
+      })
+    }).catch(err => setError(err.message ?? 'Failed to load shelter.'))
+      .finally(() => { setLoading(false); setAidLoading(false) })
   }, [id])
 
   async function handleSave(formData) {
@@ -287,30 +317,129 @@ export default function ShelterDetailPage() {
         </div>
       </div>
 
-      {/* Staff table */}
-      <div className="mb-5">
-        <h3 className="text-sm font-semibold font-heading text-text mb-3">
-          Staff <span className="text-text-subtle font-normal">({shelter.staff?.length ?? 0})</span>
-        </h3>
-        <Table
-          columns={staffColumns}
-          data={shelter.staff ?? []}
-          pageSize={5}
-          emptyText="No staff assigned to this shelter."
-        />
+      {/* Aid Overview */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold font-heading text-text mb-4">Aid Overview</h3>
+        {aidLoading ? (
+          <div className="flex items-center justify-center bg-background border border-border rounded-2xl py-8">
+            <Loader size="sm" />
+          </div>
+        ) : aidStats ? (
+          <div className="space-y-4">
+            {/* Stat cards row */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Dispatched', value: aidStats.totalDispatched, color: 'text-text-muted', bg: 'bg-surface-2',      icon: Package     },
+                { label: 'Received',         value: aidStats.accepted,        color: 'text-success',    bg: 'bg-success-surface', icon: CheckCircle2 },
+                { label: 'Pending Delivery', value: aidStats.pendingIncoming, color: 'text-warning',    bg: 'bg-warning-surface', icon: Clock        },
+                { label: 'Aid Requests',     value: aidStats.totalRequests,   color: 'text-secondary',  bg: 'bg-secondary/10',    icon: FileText     },
+              ].map(({ label, value, color, bg, icon: Icon }) => (
+                <div key={label} className="bg-background border border-border rounded-2xl p-4 flex items-center gap-3">
+                  <div className={`w-9 h-9 ${bg} rounded-xl flex items-center justify-center shrink-0`}>
+                    <Icon size={16} className={color} />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold font-heading text-text leading-none">{value}</p>
+                    <p className="text-xs text-text-muted mt-0.5">{label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Category breakdown */}
+            {aidStats.byCategory.length > 0 && (
+              <div className="bg-background border border-border rounded-2xl p-5">
+                <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Received by Category</h4>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {aidStats.byCategory.map(c => (
+                    <div key={c.name} className="flex items-center justify-between bg-surface rounded-xl px-3 py-2">
+                      <span className="text-sm text-text">{c.name}</span>
+                      <span className="text-sm font-semibold text-text">{c.qty} <span className="font-normal text-text-muted text-xs">{c.unit}</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
-      {/* Civilians table */}
-      <div>
-        <h3 className="text-sm font-semibold font-heading text-text mb-3">
-          Civilians <span className="text-text-subtle font-normal">({shelter.civilians?.length ?? 0})</span>
-        </h3>
-        <Table
-          columns={civilianColumns}
-          data={shelter.civilians ?? []}
-          pageSize={10}
-          emptyText="No civilians admitted to this shelter."
-        />
+      {/* Staff section — collapsible */}
+      <div className="bg-background rounded-2xl border border-border overflow-hidden mb-5">
+        <button
+          onClick={() => setStaffExpanded(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Users size={15} className="text-secondary" />
+            <h3 className="text-sm font-semibold font-heading text-text">Staff</h3>
+            <span className="text-xs text-text-subtle bg-surface-2 px-2 py-0.5 rounded-full">
+              {shelter.staff?.length ?? 0}
+            </span>
+          </div>
+          <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 ${staffExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {staffExpanded && (
+          <div className="border-t border-border">
+            <div className="px-5 py-3">
+              <FilterBar
+                search={staffSearch}
+                onSearch={setStaffSearch}
+                className="mb-0"
+              />
+            </div>
+            <Table
+              columns={staffColumns}
+              data={(shelter.staff ?? []).filter(u =>
+                !staffSearch ||
+                u.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
+                u.email?.toLowerCase().includes(staffSearch.toLowerCase())
+              )}
+              pageSize={8}
+              emptyText="No staff assigned to this shelter."
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Civilians section — collapsible */}
+      <div className="bg-background rounded-2xl border border-border overflow-hidden mb-5">
+        <button
+          onClick={() => setCivilianExpanded(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-surface transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Users size={15} className="text-warning" />
+            <h3 className="text-sm font-semibold font-heading text-text">Civilians</h3>
+            <span className="text-xs text-text-subtle bg-surface-2 px-2 py-0.5 rounded-full">
+              {shelter.civilians?.length ?? 0}
+            </span>
+          </div>
+          <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 ${civilianExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {civilianExpanded && (
+          <div className="border-t border-border">
+            <div className="px-5 py-3">
+              <FilterBar
+                search={civilianSearch}
+                onSearch={setCivilianSearch}
+                className="mb-0"
+              />
+            </div>
+            <Table
+              columns={civilianColumns}
+              data={(shelter.civilians ?? []).filter(u =>
+                !civilianSearch ||
+                u.name.toLowerCase().includes(civilianSearch.toLowerCase()) ||
+                u.email?.toLowerCase().includes(civilianSearch.toLowerCase())
+              )}
+              pageSize={12}
+              emptyText="No civilians admitted to this shelter."
+            />
+          </div>
+        )}
       </div>
 
       {showEdit && (

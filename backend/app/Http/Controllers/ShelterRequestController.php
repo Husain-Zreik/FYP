@@ -12,23 +12,71 @@ use Illuminate\Http\Request;
 
 class ShelterRequestController extends Controller
 {
-    // GET /api/shelter-requests — pending requests (all for govt, scoped for shelter)
+    // GET /api/shelter-requests — requests (all for govt, scoped for shelter); optional ?status= filter
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         abort_if(! $user->isShelterScoped() && ! $user->isGovernmentAdmin(), 403);
 
         $query = ShelterRequest::with('civilian.civilianProfile', 'shelter')
-            ->where('status', 'pending')
             ->latest();
 
         if ($user->isShelterScoped()) {
             $query->where('shelter_id', $user->shelter_id);
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $requests = $query->get()->map(fn (ShelterRequest $r) => $this->format($r));
 
         return response()->json(['data' => $requests, 'message' => 'OK']);
+    }
+
+    // POST /api/shelter-requests — civilian submits a join request
+    public function store(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'civilian') {
+            abort(403, 'Only civilians can submit join requests.');
+        }
+
+        if ($user->shelter_id) {
+            return response()->json(['message' => 'You are already assigned to a shelter.'], 422);
+        }
+
+        // Must have both ID number and ID document image
+        if (! $user->civilianProfile?->id_number || ! $user->civilianProfile?->id_document_path) {
+            return response()->json([
+                'message' => 'You must upload your ID document before requesting to join a shelter.',
+            ], 422);
+        }
+
+        $request->validate(['shelter_id' => 'required|exists:shelters,id']);
+
+        $existing = ShelterRequest::where('civilian_id', $user->id)
+            ->where('shelter_id', $request->shelter_id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($existing) {
+            return response()->json(['message' => 'You already have a pending request for this shelter.'], 422);
+        }
+
+        $req = ShelterRequest::create([
+            'civilian_id'  => $user->id,
+            'shelter_id'   => $request->shelter_id,
+            'type'         => 'request',
+            'status'       => 'pending',
+            'initiated_by' => $user->id,
+        ]);
+
+        return response()->json([
+            'data'    => $this->format($req->load('civilian.civilianProfile', 'shelter')),
+            'message' => 'Request submitted successfully.',
+        ], 201);
     }
 
     // POST /api/shelter-requests/invite — shelter invites an unlinked civilian
@@ -45,10 +93,10 @@ class ShelterRequestController extends Controller
             ->whereNull('shelter_id')
             ->firstOrFail();
 
-        // Civilian must have their ID on file before they can be invited
-        if (! $civilian->civilianProfile?->id_number) {
+        // Civilian must have both ID number and document image before they can be invited
+        if (! $civilian->civilianProfile?->id_number || ! $civilian->civilianProfile?->id_document_path) {
             return response()->json([
-                'message' => 'This civilian has not uploaded their ID yet. Ask them to complete their profile before you can invite them.',
+                'message' => 'This civilian has not uploaded their ID document yet. Both ID number and document image are required.',
             ], 422);
         }
 
@@ -109,6 +157,12 @@ class ShelterRequestController extends Controller
         if ($shelterRequest->shelter_id) {
             UserController::syncShelterStatus((int) $shelterRequest->shelter_id);
         }
+
+        // Cancel all other pending requests and invitations for this civilian
+        ShelterRequest::where('civilian_id', $shelterRequest->civilian_id)
+            ->where('id', '!=', $shelterRequest->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'rejected', 'responded_at' => now()]);
 
         return response()->json(['message' => 'Request accepted. Civilian linked to shelter.']);
     }
@@ -205,14 +259,18 @@ class ShelterRequestController extends Controller
             'type'       => $r->type,
             'status'     => $r->status,
             'created_at' => $r->created_at,
-            'shelter'    => $r->shelter ? ['id' => $r->shelter->id, 'name' => $r->shelter->name] : null,
+            'shelter'    => $r->shelter ? [
+                'id'          => $r->shelter->id,
+                'name'        => $r->shelter->name,
+                'governorate' => $r->shelter->governorate,
+            ] : null,
             'civilian'   => [
-                'id'         => $c->id,
-                'name'       => $c->name,
-                'email'      => $c->email,
-                'phone'      => $c->phone,
-                'is_active'  => $c->is_active,
-                'profile'    => $profile ? [
+                'id'        => $c->id,
+                'name'      => $c->name,
+                'email'     => $c->email,
+                'phone'     => $c->phone,
+                'is_active' => $c->is_active,
+                'profile'   => $profile ? [
                     'date_of_birth'    => $profile->date_of_birth,
                     'gender'           => $profile->gender,
                     'current_location' => $profile->current_location,
@@ -220,6 +278,9 @@ class ShelterRequestController extends Controller
                     'id_type'          => $profile->id_type,
                     'id_number'        => $profile->id_number,
                     'has_id_document'  => (bool) $profile->id_document_path,
+                    'id_document_url'  => $profile->id_document_path
+                        ? \Illuminate\Support\Facades\Storage::disk('public')->url($profile->id_document_path)
+                        : null,
                 ] : null,
             ],
         ];

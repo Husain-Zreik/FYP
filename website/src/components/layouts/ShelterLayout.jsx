@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserCheck, Users, Inbox,
-  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake, ArrowDownToLine,
+  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake, ArrowDownToLine, Send,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
@@ -61,25 +61,20 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
       ],
     },
     {
-      label: 'Operations',
+      label: 'People',
       items: [
-        { label: 'Civilians', path: '/shelter/civilians', icon: UserCheck },
-        { label: 'Staff',     path: '/shelter/staff',     icon: Users     },
-      ],
-    },
-    {
-      label: 'Requests',
-      items: [
-        { label: 'Requests', path: '/shelter/requests', icon: Inbox, badge: pendingCount },
+        { label: 'Civilians',     path: '/shelter/civilians', icon: UserCheck },
+        { label: 'Staff',         path: '/shelter/staff',     icon: Users     },
+        { label: 'Join Requests', path: '/shelter/requests',  icon: Inbox, badge: pendingCount },
       ],
     },
     {
       label: 'Aid',
       items: [
-        { label: 'Aid Requests',    path: '/shelter/aid-requests',    icon: Package                                        },
-        { label: 'Incoming Aid',   path: '/shelter/incoming-aid',   icon: ArrowDownToLine, badge: pendingIncomingAidCount },
-        { label: 'Aid to Civilians',path: '/shelter/aid-to-civilians',icon: HeartHandshake                               },
-        { label: 'Civilian Needs', path: '/shelter/civilian-needs', icon: UserCheck,       badge: pendingNeedsCount      },
+        { label: 'Incoming Aid',       path: '/shelter/incoming-aid',     icon: ArrowDownToLine, badge: pendingIncomingAidCount },
+        { label: 'Aid Requests',       path: '/shelter/aid-requests',     icon: Package                                         },
+        { label: 'Send to Civilians',  path: '/shelter/aid-to-civilians', icon: Send                                            },
+        { label: 'Civilian Needs',     path: '/shelter/civilian-needs',   icon: HeartHandshake,  badge: pendingNeedsCount       },
       ],
     },
   ]
