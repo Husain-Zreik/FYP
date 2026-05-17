@@ -1,17 +1,40 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserCheck, Users, Inbox,
-  LogOut, Shield, ChevronRight, ArrowLeft,
+  LogOut, Shield, ArrowLeft, Building2,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
 import Button from '../ui/Button'
+import NoShelterPage from '../../pages/NoShelterPage'
 
-const BASE_NAV = [
-  { label: 'Dashboard', path: '/shelter',           icon: LayoutDashboard },
-  { label: 'Civilians', path: '/shelter/civilians', icon: UserCheck       },
-  { label: 'Staff',     path: '/shelter/staff',     icon: Users           },
-]
+function NavItem({ label, path, icon: Icon, end, badge }) {
+  return (
+    <NavLink
+      to={path}
+      end={end}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 cursor-pointer ${
+          isActive
+            ? 'bg-primary text-primary-foreground font-semibold'
+            : 'font-medium text-text-muted hover:bg-surface hover:text-text'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon size={16} className="shrink-0 opacity-80" />
+          <span className="flex-1 truncate">{label}</span>
+          {badge > 0 && !isActive && (
+            <span className="text-[10px] font-bold bg-danger text-white px-1.5 py-0.5 rounded-full leading-none shrink-0">
+              {badge}
+            </span>
+          )}
+        </>
+      )}
+    </NavLink>
+  )
+}
 
 export default function ShelterLayout({ children, title, subtitle, back, badge, actions }) {
   const user         = useAuthStore((s) => s.user)
@@ -24,88 +47,99 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
     navigate('/login', { replace: true })
   }
 
-  const initial   = user?.name?.charAt(0).toUpperCase() ?? '?'
-  const roleLabel = user?.role?.replace(/_/g, ' ') ?? ''
-  const shelter   = user?.shelter
+  if (!user?.shelter_id) return <NoShelterPage />
+
+  const initial     = user?.name?.charAt(0).toUpperCase() ?? '?'
+  const roleLabel   = user?.role?.replace(/_/g, ' ') ?? ''
+  const shelterName = user?.shelter?.name
+
+  const NAV_GROUPS = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard', path: '/shelter', icon: LayoutDashboard, end: true },
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { label: 'Civilians', path: '/shelter/civilians', icon: UserCheck },
+        { label: 'Staff',     path: '/shelter/staff',     icon: Users     },
+      ],
+    },
+    {
+      label: 'Requests',
+      items: [
+        { label: 'Requests', path: '/shelter/requests', icon: Inbox, badge: pendingCount },
+      ],
+    },
+  ]
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
 
       {/* ── Sidebar ───────────────────────────────────────────────── */}
-      <aside className="w-60 shrink-0 bg-background border-e border-border flex flex-col">
+      <aside className="w-64 shrink-0 bg-background border-e border-border flex flex-col">
 
-        {/* Logo + shelter name */}
-        <div className="h-16 flex flex-col justify-center px-5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+        {/* Logo + shelter context */}
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'linear-gradient(135deg,#4F46E5,#7C3AED)' }}>
-              <Shield size={10} className="text-white" />
+              <Shield size={16} className="text-white" />
             </div>
-            <span className="text-sm font-bold font-heading text-text tracking-tight">Nuzuh</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold font-heading text-text tracking-tight leading-none">Nuzuh</p>
+              <p className="text-[10px] text-text-subtle mt-0.5">Shelter Dashboard</p>
+            </div>
           </div>
-          {shelter?.name && (
-            <p className="text-[10px] text-text-subtle mt-0.5 truncate">{shelter.name}</p>
+
+          {/* Shelter name chip */}
+          {shelterName && (
+            <div className="flex items-center gap-2 bg-surface rounded-lg px-3 py-2 mt-1">
+              <Building2 size={13} className="text-secondary shrink-0" />
+              <p className="text-xs font-medium text-text truncate">{shelterName}</p>
+            </div>
           )}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest px-3 mb-2">
-            Shelter
-          </p>
-          {[
-            ...BASE_NAV,
-            { label: 'Requests', path: '/shelter/requests', icon: Inbox, count: pendingCount },
-          ].map(({ label, path, icon: Icon, count }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={path === '/shelter'}
-              className={({ isActive }) =>
-                `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-text-muted hover:bg-surface hover:text-text'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon size={16} className="shrink-0" />
-                  <span className="flex-1">{label}</span>
-                  {count > 0 && !isActive && (
-                    <span className="text-[10px] font-bold bg-danger text-white px-1.5 py-0.5 rounded-full leading-none">
-                      {count}
-                    </span>
-                  )}
-                  {isActive && <ChevronRight size={13} className="opacity-60" />}
-                </>
-              )}
-            </NavLink>
+        {/* Nav groups */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
+              <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest px-3 mb-1.5">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map(item => (
+                  <NavItem key={item.path} {...item} />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
         {/* User */}
-        <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface transition-colors">
+        <div className="px-3 py-3 border-t border-border">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface transition-colors">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
               {initial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text truncate leading-tight">{user?.name}</p>
-              <p className="text-xs text-text-subtle capitalize truncate">{roleLabel}</p>
+              <p className="text-sm font-semibold text-text truncate leading-snug">{user?.name}</p>
+              <p className="text-[11px] text-text-subtle capitalize truncate">{roleLabel}</p>
             </div>
             <Button variant="icon-delete" onClick={handleLogout} title="Sign out">
               <LogOut size={14} />
             </Button>
           </div>
         </div>
+
       </aside>
 
       {/* ── Main ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="shrink-0 bg-background border-b border-border px-6"
-          style={{ minHeight: '4rem' }}>
+        <header className="shrink-0 bg-background border-b border-border px-6" style={{ minHeight: '4rem' }}>
           <div className="flex items-center gap-3 py-3" style={{ minHeight: '4rem' }}>
             {back !== undefined && (
               <button
@@ -124,9 +158,7 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
             {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   )
