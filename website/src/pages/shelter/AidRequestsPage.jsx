@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Plus, Clock, CheckCircle, Package, AlertCircle } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Modal, Table, Button, Badge, Loader, SlidePanel, Select, Input, FilterBar } from '../../components/ui'
+import { Modal, Table, Button, Badge, Loader, SlidePanel, Select, Input, FilterBar, StatCard } from '../../components/ui'
+import { fmt } from '../../utils/format'
 import { getAidRequests, createAidRequest, reviewAidRequest, fulfillAidRequest } from '../../api/aidRequests'
 import { getAidCategories } from '../../api/aidCategories'
 
@@ -15,25 +16,6 @@ const URGENCY_OPTS = [
   { value: 'high',     label: 'High — needed within a few days'        },
   { value: 'critical', label: 'Critical — immediate need'              },
 ]
-
-function fmt(str) {
-  if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold font-heading text-text">{value}</p>
-    </div>
-  )
-}
 
 function InfoRow({ label, value }) {
   return (

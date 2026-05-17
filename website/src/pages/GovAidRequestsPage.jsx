@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Clock, CheckCircle, XCircle, Package, AlertCircle, Check, X, Pencil } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Table, Button, Badge, Loader, SlidePanel, SearchInput, Select } from '../components/ui'
+import { Table, Button, Badge, Loader, SlidePanel, StatCard, FilterBar } from '../components/ui'
+import { fmt } from '../utils/format'
 import { getAidRequests, reviewAidRequest } from '../api/aidRequests'
 import { getAidCategories } from '../api/aidCategories'
 import { useUiStore } from '../store/uiStore'
@@ -10,10 +11,6 @@ const STATUS_BADGE  = { pending: 'muted', approved: 'success', partially_approve
 const STATUS_LABEL  = { pending: 'Pending', approved: 'Approved', partially_approved: 'Partially Approved', rejected: 'Rejected', fulfilled: 'Fulfilled' }
 const URGENCY_BADGE = { critical: 'danger', high: 'warning', medium: 'info', low: 'muted' }
 const URGENCY_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
-
-function fmt(d) {
-  return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-}
 
 const URGENCY_OPTS = [
   { value: '',         label: 'All urgency' },
@@ -31,20 +28,6 @@ const STATUS_OPTS = [
   { value: 'rejected',           label: 'Rejected'           },
   { value: 'fulfilled',          label: 'Fulfilled'          },
 ]
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold font-heading text-text">{value}</p>
-    </div>
-  )
-}
 
 function Row({ label, value }) {
   return (
@@ -335,17 +318,15 @@ export default function GovAidRequestsPage() {
         <StatCard label="Fulfilled" value={fulfilled} icon={Package}      iconColor="text-text-muted" iconBg="bg-surface-2"       />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by shelter name…"
-          className="flex-1 min-w-48 max-w-xs"
-        />
-        <Select value={catFilter}     onChange={setCatFilter}     options={categoryOpts} className="w-44" />
-        <Select value={urgencyFilter} onChange={setUrgencyFilter} options={URGENCY_OPTS} className="w-36" />
-        <Select value={statusFilter}  onChange={setStatusFilter}  options={STATUS_OPTS}  className="w-44" />
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        filters={[
+          { value: catFilter,     onChange: setCatFilter,     options: categoryOpts, className: 'w-44' },
+          { value: urgencyFilter, onChange: setUrgencyFilter, options: URGENCY_OPTS,  className: 'w-36' },
+          { value: statusFilter,  onChange: setStatusFilter,  options: STATUS_OPTS,   className: 'w-44' },
+        ]}
+      />
 
       <Table
         columns={columns}

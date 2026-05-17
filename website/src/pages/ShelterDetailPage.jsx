@@ -5,7 +5,8 @@ import DashboardLayout from '../components/layouts/DashboardLayout'
 import ShelterPanel    from '../components/shelters/ShelterPanel'
 import { Button, Badge, Loader, Table, FilterBar } from '../components/ui'
 import { getShelter, updateShelter, uploadShelterImage } from '../api/shelters'
-import client from '../api/client'
+import { getAidDispatches } from '../api/aidDispatches'
+import { getAidRequests } from '../api/aidRequests'
 
 const STATUS_BADGE = {
   active:           'success',
@@ -89,8 +90,8 @@ export default function ShelterDetailPage() {
   useEffect(() => {
     Promise.all([
       getShelter(id),
-      client.get('/aid-dispatches', { params: { shelter_id: id } }),
-      client.get('/aid-requests',   { params: { shelter_id: id } }),
+      getAidDispatches({ shelter_id: id }),
+      getAidRequests({ shelter_id: id }),
     ]).then(([shelterRes, dispatchRes, requestRes]) => {
       setShelter(shelterRes.data)
       const dispatches = dispatchRes.data ?? []

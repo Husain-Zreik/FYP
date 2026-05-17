@@ -4,12 +4,13 @@ import {
   Send, CalendarClock, AlertCircle, Check, X,
 } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Button, Badge, Loader, SlidePanel, Select, Table } from '../../components/ui'
+import { Button, Badge, Loader, SlidePanel, Select, Table, StatCard } from '../../components/ui'
+import { fmt } from '../../utils/format'
 import { getAidDispatches, createAidDispatch, acceptAidDispatch, rejectAidDispatch } from '../../api/aidDispatches'
 import { getAidSchedules, createAidSchedule, updateAidSchedule, deleteAidSchedule, dispatchSchedule } from '../../api/aidSchedules'
 import { getAidCategories } from '../../api/aidCategories'
+import { getUsers } from '../../api/users'
 import { useAuthStore } from '../../store/authStore'
-import client from '../../api/client'
 
 const STATUS_BADGE  = { pending: 'warning', accepted: 'success', rejected: 'danger' }
 const STATUS_LABEL  = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
@@ -19,25 +20,6 @@ const FREQ_OPTS = [
   { value: 'monthly',   label: 'Monthly'   },
   { value: 'quarterly', label: 'Quarterly' },
 ]
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold font-heading text-text">{value}</p>
-    </div>
-  )
-}
-
-function fmt(str) {
-  if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 function CivilianAvatar({ name }) {
   const initial = (name ?? '?').charAt(0).toUpperCase()
@@ -60,7 +42,7 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
 
   useEffect(() => {
     Promise.all([
-      client.get('/users', { params: { role: 'civilian' } }),
+      getUsers({ role: 'civilian' }),
       getAidCategories(),
     ])
       .then(([u, c]) => {
@@ -167,7 +149,7 @@ function NewSchedulePanel({ onClose, onCreated, shelterId }) {
 
   useEffect(() => {
     Promise.all([
-      client.get('/users', { params: { role: 'civilian' } }),
+      getUsers({ role: 'civilian' }),
       getAidCategories(),
     ])
       .then(([u, c]) => {

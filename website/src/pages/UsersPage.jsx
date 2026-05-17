@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Plus, Pencil, Trash2, RefreshCw } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import UserPanel       from '../components/users/UserPanel'
-import { Button, Table, Badge, SearchInput, Select, ConfirmDialog } from '../components/ui'
+import { Button, Table, Badge, Select, ConfirmDialog, FilterBar } from '../components/ui'
 import { createUser, updateUser, deleteUser } from '../api/users'
 import { useAllUsersStore } from '../store/dataStore'
 import { useState } from 'react'
@@ -78,10 +78,11 @@ export default function UsersPage() {
     >
       {error && <div className="text-sm text-danger bg-danger-surface border border-danger/20 rounded-xl px-4 py-3 mb-5">{error}</div>}
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" className="flex-1 min-w-48 max-w-xs"/>
-        <Select value={roleFilter} onChange={setRoleFilter} options={ROLE_OPTS} className="w-40"/>
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        filters={[{ value: roleFilter, onChange: setRoleFilter, options: ROLE_OPTS, className: 'w-40' }]}
+      />
 
       <Table columns={columns} data={filtered} loading={loading} emptyText="No staff members match your search."/>
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Eye, LayoutGrid, List, Building2, Users, UserCheck, RefreshCw } from 'lucide-react'
 import DashboardLayout  from '../components/layouts/DashboardLayout'
 import ShelterPanel     from '../components/shelters/ShelterPanel'
-import { Button, Table, Badge, SearchInput, Select, ConfirmDialog } from '../components/ui'
+import { Button, Table, Badge, Select, ConfirmDialog, FilterBar } from '../components/ui'
 import { createShelter, updateShelter, deleteShelter } from '../api/shelters'
 import { useSheltersStore } from '../store/dataStore'
 
@@ -163,24 +163,26 @@ export default function SheltersPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search name, code or address…" className="flex-1 min-w-40 max-w-xs" />
-        <Select value={govFilter}  onChange={setGovFilter}  options={GOVERNORATES_OPTS} className="w-44" />
-        <Select value={statFilter} onChange={setStatFilter} options={STATUS_OPTS}        className="w-36" />
-
-        {/* View toggle */}
-        <div className="flex items-center border border-border rounded-xl overflow-hidden shrink-0">
-          <button onClick={() => setViewMode('table')}
-            className={`px-3 py-2 transition-colors ${viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'text-text-muted hover:bg-surface'}`}>
-            <List size={15} />
-          </button>
-          <button onClick={() => setViewMode('grid')}
-            className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-text-muted hover:bg-surface'}`}>
-            <LayoutGrid size={15} />
-          </button>
-        </div>
-
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        filters={[
+          { value: govFilter,  onChange: setGovFilter,  options: GOVERNORATES_OPTS, className: 'w-44' },
+          { value: statFilter, onChange: setStatFilter, options: STATUS_OPTS,        className: 'w-36' },
+        ]}
+        actions={
+          <div className="flex items-center border border-border rounded-xl overflow-hidden shrink-0">
+            <button onClick={() => setViewMode('table')}
+              className={`px-3 py-2 transition-colors ${viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'text-text-muted hover:bg-surface'}`}>
+              <List size={15} />
+            </button>
+            <button onClick={() => setViewMode('grid')}
+              className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-text-muted hover:bg-surface'}`}>
+              <LayoutGrid size={15} />
+            </button>
+          </div>
+        }
+      />
 
       {viewMode === 'table' ? (
         <Table columns={columns} data={filtered} loading={loading} emptyText="No shelters found." />

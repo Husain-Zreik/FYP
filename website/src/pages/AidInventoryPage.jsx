@@ -1,30 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, Package, Archive, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Button, Badge, Loader, Input, Select, SlidePanel, Table, FilterBar } from '../components/ui'
+import { Button, Badge, Loader, Input, Select, SlidePanel, Table, FilterBar, StatCard } from '../components/ui'
+import { fmt } from '../utils/format'
 import { getAidCategories } from '../api/aidCategories'
 import { getAidBatches, createAidBatch } from '../api/aidBatches'
 import { getAidRequests } from '../api/aidRequests'
-
-function fmt(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' }
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg, loading }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      {loading ? (
-        <div className="h-8 w-16 bg-surface-2 rounded animate-pulse" />
-      ) : (
-        <p className="text-2xl font-bold font-heading text-text">{value}</p>
-      )}
-    </div>
-  )
-}
 
 function CategoryCard({ category, totalReceived, available }) {
   const total     = totalReceived ?? 0
@@ -298,7 +279,6 @@ export default function AidInventoryPage() {
           icon={Package}
           iconColor="text-secondary"
           iconBg="bg-secondary/10"
-          loading={loadingCats}
         />
         <StatCard
           label="Total Received"
@@ -306,7 +286,6 @@ export default function AidInventoryPage() {
           icon={Archive}
           iconColor="text-text-muted"
           iconBg="bg-surface-2"
-          loading={loadingBatches}
         />
         <StatCard
           label="Available Now"
@@ -314,7 +293,6 @@ export default function AidInventoryPage() {
           icon={CheckCircle}
           iconColor="text-success"
           iconBg="bg-success-surface"
-          loading={loadingBatches}
         />
         <StatCard
           label="Pending Requests"
@@ -322,7 +300,6 @@ export default function AidInventoryPage() {
           icon={Clock}
           iconColor="text-warning"
           iconBg="bg-warning-surface"
-          loading={false}
         />
       </div>
 

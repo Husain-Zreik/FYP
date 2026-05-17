@@ -4,7 +4,8 @@ import {
   Package, Send, CalendarClock, AlertCircle, Building2,
 } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Table, Button, Badge, Loader, SlidePanel, Select } from '../components/ui'
+import { Table, Button, Badge, Loader, SlidePanel, Select, StatCard } from '../components/ui'
+import { fmt } from '../utils/format'
 import { getAidDispatches, createAidDispatch } from '../api/aidDispatches'
 import { getAidSchedules, createAidSchedule, updateAidSchedule, deleteAidSchedule, dispatchSchedule } from '../api/aidSchedules'
 import { getShelters } from '../api/shelters'
@@ -12,10 +13,6 @@ import { getAidCategories } from '../api/aidCategories'
 
 const STATUS_BADGE = { pending: 'warning', accepted: 'success', rejected: 'danger' }
 const STATUS_LABEL = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
-
-function fmt(d) {
-  return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-}
 
 const FREQ_OPTS = [
   { value: 'weekly',    label: 'Weekly'    },
@@ -40,20 +37,6 @@ function FieldLabel({ children, optional }) {
       {children}
       {optional && <span className="text-text-subtle font-normal ms-1">(optional)</span>}
     </label>
-  )
-}
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold font-heading text-text">{value}</p>
-    </div>
   )
 }
 

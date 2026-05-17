@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Clock, Eye, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Button, Badge, Table, SlidePanel, Select } from '../../components/ui'
+import { Button, Badge, Table, SlidePanel, Select, StatCard, FilterBar } from '../../components/ui'
 import { getCivilianNeeds, reviewCivilianNeed } from '../../api/civilianNeeds'
 import { useUiStore } from '../../store/uiStore'
 
@@ -61,20 +61,6 @@ const REVIEW_STATUS_OPTS = [
   { value: 'fulfilled', label: 'Mark as Fulfilled'  },
   { value: 'rejected',  label: 'Reject'             },
 ]
-
-function StatCard({ label, value, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="bg-background border border-border rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon size={15} className={iconColor} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold font-heading text-text">{value}</p>
-    </div>
-  )
-}
 
 function Row({ label, value }) {
   return (
@@ -341,11 +327,13 @@ export default function CivilianNeedsPage() {
         <StatCard label="Rejected"  value={rejectedCount}  icon={XCircle}      iconColor="text-danger"     iconBg="bg-danger-surface"  />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <Select value={catFilter}     onChange={setCatFilter}     options={CATEGORY_OPTS} className="w-44" />
-        <Select value={urgencyFilter} onChange={setUrgencyFilter} options={URGENCY_OPTS}  className="w-36" />
-        <Select value={statusFilter}  onChange={setStatusFilter}  options={STATUS_OPTS}   className="w-36" />
-      </div>
+      <FilterBar
+        filters={[
+          { value: catFilter,     onChange: setCatFilter,     options: CATEGORY_OPTS, className: 'w-44' },
+          { value: urgencyFilter, onChange: setUrgencyFilter, options: URGENCY_OPTS,  className: 'w-36' },
+          { value: statusFilter,  onChange: setStatusFilter,  options: STATUS_OPTS,   className: 'w-36' },
+        ]}
+      />
 
       <Table
         columns={columns}

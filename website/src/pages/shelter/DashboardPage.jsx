@@ -5,9 +5,9 @@ import {
   HeartHandshake, ArrowDownToLine, Clock, ArrowRight, AlertCircle,
 } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
-import { Badge, Loader } from '../../components/ui'
+import { Badge, Loader, StatCard } from '../../components/ui'
 import { useAuthStore } from '../../store/authStore'
-import client from '../../api/client'
+import { getShelterStats } from '../../api/stats'
 
 function greeting() {
   const h = new Date().getHours()
@@ -21,19 +21,6 @@ const STATUS_LABEL  = { active: 'Active',  inactive: 'Inactive', full: 'Full', u
 const DISPATCH_BADGE = { pending: 'warning', accepted: 'success', rejected: 'danger' }
 const DISPATCH_LABEL = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
 
-function StatCard({ label, value, sub, icon: Icon, color, bg }) {
-  return (
-    <div className="bg-background rounded-2xl border border-border p-5 hover:shadow-sm transition-shadow">
-      <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-4`}>
-        <Icon size={18} className={color} />
-      </div>
-      <p className="text-2xl font-bold font-heading text-text mb-0.5">{value ?? 0}</p>
-      <p className="text-xs text-text-muted">{label}</p>
-      {sub && <p className="text-[11px] text-text-subtle mt-0.5">{sub}</p>}
-    </div>
-  )
-}
-
 export default function ShelterDashboardPage() {
   const user    = useAuthStore((s) => s.user)
   const [stats,   setStats]   = useState(null)
@@ -41,7 +28,7 @@ export default function ShelterDashboardPage() {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    client.get('/stats/shelter')
+    getShelterStats()
       .then(res => setStats(res.data))
       .catch(err => setError(err.message ?? 'Failed to load stats.'))
       .finally(() => setLoading(false))

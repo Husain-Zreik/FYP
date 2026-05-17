@@ -4,8 +4,9 @@ import ShelterLayout from '../../components/layouts/ShelterLayout'
 import ShelterPanel  from '../../components/shelters/ShelterPanel'
 import { Button, Badge, Loader } from '../../components/ui'
 import { getShelter, updateShelter, uploadShelterImage } from '../../api/shelters'
+import { getAidDispatches } from '../../api/aidDispatches'
+import { getAidRequests } from '../../api/aidRequests'
 import { useAuthStore } from '../../store/authStore'
-import client from '../../api/client'
 
 const STATUS_BADGE = { active:'success', full:'warning', inactive:'muted', under_maintenance:'danger' }
 const STATUS_LABEL = { active:'Active', full:'Full', inactive:'Inactive', under_maintenance:'Maintenance' }
@@ -29,8 +30,8 @@ export default function ShelterInfoPage() {
 
     Promise.all([
       getShelter(user.shelter_id),
-      client.get('/aid-dispatches', { params: { direction: 'incoming' } }),
-      client.get('/aid-requests'),
+      getAidDispatches({ direction: 'incoming' }),
+      getAidRequests(),
     ]).then(([shelterRes, dispatchRes, requestRes]) => {
       setShelter(shelterRes.data)
       const dispatches = dispatchRes.data ?? []

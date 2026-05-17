@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { Download, IdCard, Check, X, Clock, CheckCircle2, XCircle, AlertCircle, Inbox } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
 import { Table, Button, Badge, Loader, FilterBar, Modal } from '../../components/ui'
+import { fmt } from '../../utils/format'
 import { getRequests, acceptRequest, rejectRequest, cancelInvitation } from '../../api/shelterRequests'
 import { useUiStore } from '../../store/uiStore'
 
 const ID_TYPE_LABEL = { national_id: 'National ID', passport: 'Passport', residency: 'Residency Card' }
 const STATUS_BADGE  = { pending: 'muted', accepted: 'success', rejected: 'danger' }
 const STATUS_LABEL  = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected' }
-function fmt(d) { return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' }
 
 function InfoSection({ title, children }) {
   return (

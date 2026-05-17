@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Eye, RefreshCw, UserCheck, Building2, Search, Home } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import UserPanel       from '../components/users/UserPanel'
-import { Button, Table, Badge, SearchInput, Select, ConfirmDialog } from '../components/ui'
+import { Button, Table, Badge, Select, ConfirmDialog, FilterBar } from '../components/ui'
 import { createUser, updateUser, deleteUser } from '../api/users'
 import { getShelters } from '../api/shelters'
-import client from '../api/client'
+import { getGovernmentStats } from '../api/stats'
 import { useAllUsersStore } from '../store/dataStore'
 
 export default function CiviliansPage() {
@@ -24,7 +24,7 @@ export default function CiviliansPage() {
   useEffect(() => {
     load()
     getShelters().then(r => setShelters(r.data ?? []))
-    client.get('/stats/government').then(r => setStats(r.data)).catch(() => {})
+    getGovernmentStats().then(r => setStats(r.data)).catch(() => {})
   }, [load])
 
   const civilians = items.filter(u => u.role === 'civilian')
@@ -80,7 +80,7 @@ export default function CiviliansPage() {
     <DashboardLayout title="Civilians" subtitle="All registered civilians across the system."
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => { load(true); client.get('/stats/government').then(r => setStats(r.data)).catch(() => {}) }} title="Sync"><RefreshCw size={14}/></Button>
+          <Button variant="secondary" size="sm" onClick={() => { load(true); getGovernmentStats().then(r => setStats(r.data)).catch(() => {}) }} title="Sync"><RefreshCw size={14}/></Button>
           <Button onClick={() => setPanel({})}><Plus size={14}/> Add civilian</Button>
         </div>
       }
@@ -103,10 +103,11 @@ export default function CiviliansPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" className="flex-1 min-w-40 max-w-xs"/>
-        <Select value={shelterFilter} onChange={setShelterFilter} options={shelterOpts} className="w-48"/>
-      </div>
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        filters={[{ value: shelterFilter, onChange: setShelterFilter, options: shelterOpts, className: 'w-48' }]}
+      />
 
       <Table columns={columns} data={filtered} loading={loading} emptyText="No civilians match your filters."/>
 

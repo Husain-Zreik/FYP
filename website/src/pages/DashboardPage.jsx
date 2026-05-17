@@ -5,9 +5,9 @@ import {
   CalendarClock, Archive, Clock, ArrowRight, AlertCircle,
 } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
-import { Badge, Loader } from '../components/ui'
+import { Badge, Loader, StatCard } from '../components/ui'
 import { useAuthStore } from '../store/authStore'
-import client from '../api/client'
+import { getGovernmentStats } from '../api/stats'
 
 function greeting() {
   const h = new Date().getHours()
@@ -18,19 +18,6 @@ function greeting() {
 
 const URGENCY_BADGE = { critical: 'danger', high: 'warning', medium: 'info', low: 'muted' }
 const URGENCY_LABEL = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }
-
-function StatCard({ label, value, sub, icon: Icon, color, bg }) {
-  return (
-    <div className="bg-background rounded-2xl border border-border p-5 hover:shadow-sm transition-shadow">
-      <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-4`}>
-        <Icon size={18} className={color} />
-      </div>
-      <p className="text-2xl font-bold font-heading text-text mb-0.5">{value ?? 0}</p>
-      <p className="text-xs text-text-muted">{label}</p>
-      {sub && <p className="text-[11px] text-text-subtle mt-0.5">{sub}</p>}
-    </div>
-  )
-}
 
 function SectionHeader({ title, subtitle, linkTo, linkLabel }) {
   return (
@@ -55,7 +42,7 @@ export default function DashboardPage() {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    client.get('/stats/government')
+    getGovernmentStats()
       .then(res => setStats(res.data))
       .catch(err => setError(err.message ?? 'Failed to load stats.'))
       .finally(() => setLoading(false))
