@@ -1,16 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Building2, Users, UserCheck,
-  BarChart3, LogOut, Shield, ChevronRight,
+  LogOut, Shield, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import Button from '../ui/Button'
 
 const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Shelters',  path: '/shelters',  icon: Building2       },
-  { label: 'Users',     path: '/users',     icon: Users           },
+  { label: 'Staff',     path: '/users',     icon: Users           },
   { label: 'Civilians', path: '/civilians', icon: UserCheck       },
-  { label: 'Reports',   path: '/reports',   icon: BarChart3       },
 ]
 
 export default function DashboardLayout({ children, title }) {
@@ -78,13 +78,9 @@ export default function DashboardLayout({ children, title }) {
               <p className="text-sm font-medium text-text truncate leading-tight">{user?.name}</p>
               <p className="text-xs text-text-subtle capitalize truncate">{roleLabel}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              title="Sign out"
-              className="p-1.5 text-text-subtle hover:text-danger hover:bg-danger-surface rounded-lg transition-colors"
-            >
+            <Button variant="icon-delete" onClick={handleLogout} title="Sign out">
               <LogOut size={14} />
-            </button>
+            </Button>
           </div>
         </div>
 
