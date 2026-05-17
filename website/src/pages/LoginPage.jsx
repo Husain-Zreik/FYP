@@ -11,18 +11,23 @@ const HIGHLIGHTS = [
 ]
 
 export default function LoginPage() {
+  const initialized     = useAuthStore((s) => s.initialized)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user            = useAuthStore((s) => s.user)
   const login           = useAuthStore((s) => s.login)
+  const logout          = useAuthStore((s) => s.logout)
+  const navigate        = useNavigate()
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState(null)
 
-  const navigate = useNavigate()
-
-  if (isAuthenticated) return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
+  // All hooks are above — safe to early-return below
+  if (!initialized) return null
+  if (isAuthenticated && user?.access_point !== 'civilian') {
+    return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -31,7 +36,11 @@ export default function LoginPage() {
     try {
       await login(email, password)
       const ap = useAuthStore.getState().user?.access_point
-      navigate(ap === 'shelter' ? '/shelter' : '/dashboard', { replace: true })
+      if (ap === 'civilian') {
+        await logout()
+        setError('This portal is for staff only. Please use the mobile app.')
+        return
+      }
     } catch (err) {
       setError(err.message ?? 'Invalid credentials.')
     } finally {

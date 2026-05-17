@@ -47,7 +47,9 @@ const NAV_LINKS = [
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const initialized     = useAuthStore((s) => s.initialized)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user            = useAuthStore((s) => s.user)
 
   const heroRef = useRef(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
@@ -58,10 +60,9 @@ export default function LandingPage() {
   const textY       = useTransform(scrollYProgress, [0, 1], ['0%', '-30%'])
   const textOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
 
-  const user = useAuthStore((s) => s.user)
-  if (isAuthenticated) {
-    return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
-  }
+  // All hooks above — safe to early-return below
+  if (!initialized) return null
+  if (isAuthenticated) return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
 
   return (
     <div className="bg-background overflow-x-hidden">
