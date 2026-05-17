@@ -32,7 +32,7 @@ class UserResource extends JsonResource
                     'notes'            => $p->notes,
                     'id_type'          => $p->id_type,
                     'id_number'        => $p->id_number,
-                    'id_document_url'  => $p->id_document_path ? Storage::url($p->id_document_path) : null,
+                    'id_document_url'  => $p->id_document_path ? Storage::disk('public')->url($p->id_document_path) : null,
                     'housing_status'   => $p->housing_status ?? 'seeking',
                 ];
             }),

@@ -85,7 +85,7 @@ class UserController extends Controller
         );
 
         return response()->json([
-            'data'    => ['url' => Storage::url($path)],
+            'data'    => ['url' => Storage::disk('public')->url($path)],
             'message' => 'ID document uploaded.',
         ]);
     }

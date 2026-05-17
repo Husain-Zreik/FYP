@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,              // users + sync shelter statuses
             CivilianProfileSeeder::class,   // profiles, IDs, private housing
             RoleCapabilitySeeder::class,    // default staff capabilities
+            ShelterRequestSeeder::class,    // pending invitations & join requests
+            MediaSeeder::class,             // shelter cover images + civilian ID documents
         ]);
     }
 }

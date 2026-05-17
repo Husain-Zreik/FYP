@@ -92,7 +92,7 @@ class ShelterController extends Controller
         $shelter->update(['image_path' => $path]);
 
         return response()->json([
-            'data'    => ['url' => Storage::url($path)],
+            'data'    => ['url' => Storage::disk('public')->url($path)],
             'message' => 'Image uploaded.',
         ]);
     }
