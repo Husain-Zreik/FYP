@@ -15,6 +15,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('phone')->nullable();
+            $table->enum('role', [
+                'government_admin',
+                'government_staff',
+                'shelter_admin',
+                'shelter_staff',
+                'civilian',
+            ])->default('civilian');
             $table->boolean('is_active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamps();

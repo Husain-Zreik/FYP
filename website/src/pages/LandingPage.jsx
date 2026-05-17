@@ -58,7 +58,10 @@ export default function LandingPage() {
   const textY       = useTransform(scrollYProgress, [0, 1], ['0%', '-30%'])
   const textOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  const user = useAuthStore((s) => s.user)
+  if (isAuthenticated) {
+    return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
+  }
 
   return (
     <div className="bg-background overflow-x-hidden">

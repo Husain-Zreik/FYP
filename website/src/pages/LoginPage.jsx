@@ -28,7 +28,8 @@ export default function LoginPage() {
     setError(null)
     try {
       await login(email, password)
-      navigate('/dashboard', { replace: true })
+      const ap = useAuthStore.getState().user?.access_point
+      navigate(ap === 'shelter' ? '/shelter' : '/dashboard', { replace: true })
     } catch (err) {
       setError(err.message ?? 'Invalid credentials.')
     } finally {

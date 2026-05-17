@@ -1,30 +1,25 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Building2, Users, UserCheck,
-  BarChart3, LogOut, Shield, ChevronRight,
+  LayoutDashboard, UserCheck, Users, BarChart3,
+  LogOut, Shield, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
 const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Shelters',  path: '/shelters',  icon: Building2       },
-  { label: 'Users',     path: '/users',     icon: Users           },
-  { label: 'Civilians', path: '/civilians', icon: UserCheck       },
-  { label: 'Reports',   path: '/reports',   icon: BarChart3       },
+  { label: 'Dashboard', path: '/shelter',            icon: LayoutDashboard },
+  { label: 'Civilians', path: '/shelter/civilians',  icon: UserCheck       },
+  { label: 'Staff',     path: '/shelter/staff',      icon: Users           },
+  { label: 'Reports',   path: '/shelter/reports',    icon: BarChart3       },
 ]
 
-export default function DashboardLayout({ children, title }) {
+export default function ShelterLayout({ children, title }) {
   const user     = useAuthStore((s) => s.user)
   const logout   = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
 
-  async function handleLogout() {
-    await logout()
-    navigate('/login', { replace: true })
-  }
-
   const initial   = user?.name?.charAt(0).toUpperCase() ?? '?'
   const roleLabel = user?.role?.replace(/_/g, ' ') ?? ''
+  const shelter   = user?.shelter
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -32,23 +27,30 @@ export default function DashboardLayout({ children, title }) {
       {/* ── Sidebar ───────────────────────────────────────────────── */}
       <aside className="w-60 shrink-0 bg-background border-e border-border flex flex-col">
 
-        {/* Logo */}
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
-          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center shrink-0">
-            <Shield size={13} className="text-primary-foreground" />
+        {/* Logo + shelter name */}
+        <div className="h-16 flex flex-col justify-center px-5 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+              style={{ background: 'linear-gradient(135deg,#4F46E5,#7C3AED)' }}>
+              <Shield size={10} className="text-white" />
+            </div>
+            <span className="text-sm font-bold font-heading text-text tracking-tight">Nuzuh</span>
           </div>
-          <span className="text-base font-bold font-heading text-text tracking-tight">Nuzuh</span>
+          {shelter?.name && (
+            <p className="text-[10px] text-text-subtle mt-0.5 truncate">{shelter.name}</p>
+          )}
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           <p className="text-[10px] font-semibold text-text-subtle uppercase tracking-widest px-3 mb-2">
-            Government
+            Shelter
           </p>
           {navItems.map(({ label, path, icon: Icon }) => (
             <NavLink
               key={path}
               to={path}
+              end={path === '/shelter'}
               className={({ isActive }) =>
                 `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
@@ -78,16 +80,12 @@ export default function DashboardLayout({ children, title }) {
               <p className="text-sm font-medium text-text truncate leading-tight">{user?.name}</p>
               <p className="text-xs text-text-subtle capitalize truncate">{roleLabel}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              title="Sign out"
-              className="p-1.5 text-text-subtle hover:text-danger hover:bg-danger-surface rounded-lg transition-colors"
-            >
+            <button onClick={handleLogout} title="Sign out"
+              className="p-1.5 text-text-subtle hover:text-danger hover:bg-danger-surface rounded-lg transition-colors">
               <LogOut size={14} />
             </button>
           </div>
         </div>
-
       </aside>
 
       {/* ── Main ──────────────────────────────────────────────────── */}
