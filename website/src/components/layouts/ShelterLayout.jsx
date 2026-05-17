@@ -6,7 +6,6 @@ import {
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
 import Button from '../ui/Button'
-import NoShelterPage from '../../pages/NoShelterPage'
 
 function NavItem({ label, path, icon: Icon, end, badge }) {
   return (
@@ -47,8 +46,6 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
     navigate('/login', { replace: true })
   }
 
-  if (!user?.shelter_id) return <NoShelterPage />
-
   const initial     = user?.name?.charAt(0).toUpperCase() ?? '?'
   const roleLabel   = user?.role?.replace(/_/g, ' ') ?? ''
   const shelterName = user?.shelter?.name
@@ -57,7 +54,8 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
     {
       label: 'Overview',
       items: [
-        { label: 'Dashboard', path: '/shelter', icon: LayoutDashboard, end: true },
+        { label: 'Dashboard',    path: '/shelter',      icon: LayoutDashboard, end: true },
+        { label: 'Shelter Info', path: '/shelter/info', icon: Building2 },
       ],
     },
     {

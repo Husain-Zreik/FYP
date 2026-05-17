@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Eye, LayoutGrid, List, Building2, Users, UserCheck } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, LayoutGrid, List, Building2, Users, UserCheck, RefreshCw } from 'lucide-react'
 import DashboardLayout  from '../components/layouts/DashboardLayout'
 import ShelterPanel     from '../components/shelters/ShelterPanel'
 import { Button, Table, Badge, SearchInput, Select, ConfirmDialog } from '../components/ui'
-import { getShelters, createShelter, updateShelter, deleteShelter } from '../api/shelters'
+import { createShelter, updateShelter, deleteShelter } from '../api/shelters'
+import { useSheltersStore } from '../store/dataStore'
 
 const GOVERNORATES_OPTS = [
   { value: '', label: 'All governorates' },
@@ -36,10 +37,8 @@ const STATUS_LABEL = {
 
 export default function SheltersPage() {
   const navigate = useNavigate()
+  const { items: shelters, loading, error: loadError, load, append, update: storeUpdate, remove } = useSheltersStore()
 
-  const [shelters,   setShelters]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [loadError,  setLoadError]  = useState(null)
   const [search,     setSearch]     = useState('')
   const [govFilter,  setGovFilter]  = useState('')
   const [statFilter, setStatFilter] = useState('')
@@ -47,14 +46,9 @@ export default function SheltersPage() {
   const [delTarget,  setDelTarget]  = useState(null)
   const [delError,   setDelError]   = useState(null)
   const [deleting,   setDeleting]   = useState(false)
-  const [viewMode,   setViewMode]   = useState('table') // 'table' | 'grid'
+  const [viewMode,   setViewMode]   = useState('grid')
 
-  useEffect(() => {
-    getShelters()
-      .then(res => setShelters(res.data ?? []))
-      .catch(err => setLoadError(err.message ?? 'Failed to load shelters.'))
-      .finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { load() }, [load])
 
   const filtered = shelters.filter(s => {
     const q = search.toLowerCase()
@@ -68,11 +62,11 @@ export default function SheltersPage() {
   async function handleSave(formData) {
     if (panel?.shelter) {
       const res = await updateShelter(panel.shelter.id, formData)
-      setShelters(prev => prev.map(s => s.id === panel.shelter.id ? res.data : s))
+      storeUpdate(panel.shelter.id, res.data)
       return res.data
     } else {
       const res = await createShelter(formData)
-      setShelters(prev => [...prev, res.data])
+      append(res.data)
       return res.data
     }
   }
@@ -82,7 +76,7 @@ export default function SheltersPage() {
     setDeleting(true)
     try {
       await deleteShelter(shelter.id)
-      setShelters(prev => prev.filter(s => s.id !== shelter.id))
+      remove(shelter.id)
       setDelTarget(null)
     } catch (err) {
       setDelError(err.message ?? 'Failed to delete shelter.')
@@ -155,7 +149,12 @@ export default function SheltersPage() {
     <DashboardLayout
       title="Shelters"
       subtitle="All registered shelter facilities nationwide."
-      actions={<Button onClick={() => setPanel({})}><Plus size={14} /> Add shelter</Button>}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => load(true)} title="Sync"><RefreshCw size={14}/></Button>
+          <Button onClick={() => setPanel({})}><Plus size={14}/> Add shelter</Button>
+        </div>
+      }
     >
 
       {loadError && (

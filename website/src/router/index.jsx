@@ -16,6 +16,7 @@ import RoleCapabilitiesPage     from '../pages/RoleCapabilitiesPage'
 
 // Shelter dashboard pages
 import ShelterDashboardPage     from '../pages/shelter/DashboardPage'
+import ShelterInfoPage          from '../pages/shelter/ShelterInfoPage'
 import ShelterCiviliansPage     from '../pages/shelter/CiviliansPage'
 import ShelterCivilianDetail    from '../pages/shelter/CivilianDetailPage'
 import ShelterStaffPage         from '../pages/shelter/StaffPage'
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute accessPoint="shelter" />,
         children: [
           { path: '/shelter',              element: <ShelterDashboardPage />  },
+          { path: '/shelter/info',         element: <ShelterInfoPage />       },
           { path: '/shelter/civilians',    element: <ShelterCiviliansPage />  },
           { path: '/shelter/civilians/:id',element: <ShelterCivilianDetail /> },
           { path: '/shelter/staff',        element: <ShelterStaffPage />      },

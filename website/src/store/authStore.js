@@ -1,6 +1,14 @@
 import { create } from 'zustand'
 import * as authApi from '../api/auth'
 
+// Lazy import to avoid circular dependency — called on logout to wipe cached data
+function invalidateDataStores() {
+  import('./dataStore').then(({ useSheltersStore, useAllUsersStore }) => {
+    useSheltersStore.getState().invalidate()
+    useAllUsersStore.getState().invalidate()
+  })
+}
+
 export const useAuthStore = create((set) => ({
   user:            null,
   token:           localStorage.getItem('token'),
@@ -32,5 +40,6 @@ export const useAuthStore = create((set) => ({
     try { await authApi.logout() } catch { /* token already invalid */ }
     localStorage.removeItem('token')
     set({ user: null, token: null, isAuthenticated: false })
+    invalidateDataStores()
   },
 }))

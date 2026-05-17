@@ -12,6 +12,7 @@ const HIGHLIGHTS = [
 
 export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user            = useAuthStore((s) => s.user)
   const login           = useAuthStore((s) => s.login)
 
   const [email,    setEmail]    = useState('')
@@ -21,7 +22,7 @@ export default function LoginPage() {
 
   const navigate = useNavigate()
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  if (isAuthenticated) return <Navigate to={user?.access_point === 'shelter' ? '/shelter' : '/dashboard'} replace />
 
   async function handleSubmit(e) {
     e.preventDefault()

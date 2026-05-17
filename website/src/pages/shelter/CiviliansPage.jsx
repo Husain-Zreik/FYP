@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, UserPlus, Pencil, Trash2, Check, X, Search, UserCheck, Eye } from 'lucide-react'
+import { Plus, UserPlus, Pencil, Trash2, Check, X, Search, UserCheck, Eye, RefreshCw } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
 import UserPanel     from '../../components/users/UserPanel'
 import { Button, Table, Badge, SearchInput, ConfirmDialog } from '../../components/ui'
-import { getUsers, createUser, updateUser, deleteUser } from '../../api/users'
+import { createUser, updateUser, deleteUser } from '../../api/users'
+import { useAllUsersStore } from '../../store/dataStore'
 import { inviteCivilian, searchAvailable } from '../../api/shelterRequests'
 
 // â”€â”€â”€ Invite Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -122,37 +123,25 @@ function InvitePanel({ onClose, onInvited }) {
 // â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ShelterCiviliansPage() {
   const navigate = useNavigate()
+  const { items, loading, error: loadError, load, append, update: storeUpdate, remove } = useAllUsersStore()
 
-  const [all,        setAll]        = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [loadError,  setLoadError]  = useState(null)
   const [search,     setSearch]     = useState('')
   const [panel,      setPanel]      = useState(null)
   const [showInvite, setShowInvite] = useState(false)
   const [delTarget,  setDelTarget]  = useState(null)
-  const [deleting,  setDeleting]  = useState(false)
+  const [deleting,   setDeleting]   = useState(false)
 
-  useEffect(() => {
-    getUsers()
-      .then(res => setAll(res.data ?? []))
-      .catch(err => setLoadError(err.message ?? 'Failed to load civilians.'))
-      .finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { load() }, [load])
 
-  const civilians = all.filter(u => u.role === 'civilian')
+  const civilians = items.filter(u => u.role === 'civilian')
   const filtered  = civilians.filter(u => {
     const q = search.toLowerCase()
     return !search || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
   })
 
   async function handleSave(formData) {
-    if (panel?.user) {
-      const res = await updateUser(panel.user.id, formData)
-      setAll(prev => prev.map(u => u.id === panel.user.id ? res.data : u))
-    } else {
-      const res = await createUser(formData)
-      setAll(prev => [...prev, res.data])
-    }
+    if (panel?.user) { const res = await updateUser(panel.user.id, formData); storeUpdate(panel.user.id, res.data) }
+    else { const res = await createUser(formData); append(res.data) }
     setPanel(null)
   }
 
@@ -160,7 +149,7 @@ export default function ShelterCiviliansPage() {
     setDeleting(true)
     try {
       await deleteUser(user.id)
-      setAll(prev => prev.filter(u => u.id !== user.id))
+      remove(user.id)
       setDelTarget(null)
     } finally { setDeleting(false) }
   }
@@ -205,14 +194,11 @@ export default function ShelterCiviliansPage() {
       title="Civilians"
       subtitle="Civilians registered and admitted to this shelter."
       actions={
-        <>
-          <Button variant="secondary" onClick={() => setShowInvite(true)}>
-            <UserPlus size={14} /> Invite existing
-          </Button>
-          <Button onClick={() => setPanel({})}>
-            <Plus size={14} /> Add new
-          </Button>
-        </>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => load(true)} title="Sync"><RefreshCw size={14}/></Button>
+          <Button variant="secondary" onClick={() => setShowInvite(true)}><UserPlus size={14}/> Invite existing</Button>
+          <Button onClick={() => setPanel({})}><Plus size={14}/> Add new</Button>
+        </div>
       }
     >
 

@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { AlertCircle, Search, Check, X } from 'lucide-react'
+import { AlertCircle, Search, Check, X, MapPin } from 'lucide-react'
+import Map, { Marker } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { Input, Select, Toggle, SlidePanel, Button } from '../ui'
 import client from '../../api/client'
+
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
 
 const GOVERNORATES = [
   'Beirut', 'Mount Lebanon', 'North Lebanon',
@@ -148,13 +152,45 @@ export default function ShelterPanel({ editingShelter, onSave, onClose }) {
         <Input label="Full address" required
           value={form.address} onChange={v => set('address', v)}
           placeholder="Street, area, city" error={fieldErrs.address} />
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Latitude" type="number"
-            value={form.latitude} onChange={v => set('latitude', v)}
-            placeholder="33.8938" hint="Decimal degrees" />
-          <Input label="Longitude" type="number"
-            value={form.longitude} onChange={v => set('longitude', v)}
-            placeholder="35.5018" hint="Decimal degrees" />
+        {/* Coordinate picker */}
+        <div>
+          <label className="block text-sm font-semibold text-text mb-1.5">
+            Location on map
+            <span className="text-text-subtle font-normal ms-1 text-xs">— click to pin</span>
+          </label>
+          <div className="rounded-xl overflow-hidden border border-border mb-2" style={{ height: 200 }}>
+            <Map
+              initialViewState={{
+                longitude: parseFloat(form.longitude) || 35.85,
+                latitude:  parseFloat(form.latitude)  || 33.85,
+                zoom: 8,
+              }}
+              mapStyle={MAP_STYLE}
+              style={{ width: '100%', height: '100%' }}
+              attributionControl={false}
+              onClick={e => {
+                set('latitude',  e.lngLat.lat.toFixed(6))
+                set('longitude', e.lngLat.lng.toFixed(6))
+              }}
+            >
+              {form.latitude && form.longitude && (
+                <Marker
+                  longitude={parseFloat(form.longitude)}
+                  latitude={parseFloat(form.latitude)}
+                  anchor="bottom">
+                  <MapPin size={26} className="text-danger drop-shadow-sm" fill="currentColor" fillOpacity={0.8}/>
+                </Marker>
+              )}
+            </Map>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Latitude" type="number"
+              value={form.latitude} onChange={v => set('latitude', v)}
+              placeholder="33.8938" hint="Decimal degrees" />
+            <Input label="Longitude" type="number"
+              value={form.longitude} onChange={v => set('longitude', v)}
+              placeholder="35.5018" hint="Decimal degrees" />
+          </div>
         </div>
 
         {/* Capacity */}
