@@ -1,1 +1,8 @@
 CLAUDE.md
+
+# VS Code — machine-specific configs (IPs, personal keybindings)
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

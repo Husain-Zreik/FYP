@@ -18,10 +18,9 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code configs are machine-specific (local IPs, etc.) — kept out of git.
+# Copy .vscode/launch.json.example → .vscode/launch.json and fill in your IP.
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
