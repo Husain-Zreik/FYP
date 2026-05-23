@@ -11,6 +11,15 @@
             ]
         },
         {
+            "name": "App — Device (LAN)",
+            "cwd": "application",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=API_BASE_URL=http://10.10.100.246:8000/api"
+            ]
+        },
+        {
             "name": "App — Emulator",
             "cwd": "application",
             "request": "launch",
