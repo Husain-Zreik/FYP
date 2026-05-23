@@ -39,6 +39,43 @@ class ApiClient {
 
   static Future<dynamic> delete(String path) => _request('DELETE', path);
 
+  static Future<dynamic> upload(String path, FormData formData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await _dio.post(
+        path,
+        data: formData,
+        options: Options(
+          headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+        ),
+      );
+
+      final body = response.data;
+      if (body is Map && body.containsKey('data')) {
+        return body['data'];
+      }
+      return body;
+    } on DioException catch (e) {
+      final responseData = e.response?.data;
+      if (responseData is Map) {
+        throw ApiException(
+          responseData['message'] as String? ?? 'An error occurred.',
+          errors: responseData['errors'] as Map<String, dynamic>?,
+          statusCode: e.response?.statusCode,
+        );
+      }
+      throw ApiException(
+        e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.receiveTimeout
+            ? 'Connection timed out. Check your network.'
+            : 'Network error. Check your connection.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
   static Future<dynamic> _request(
     String method,
     String path, {

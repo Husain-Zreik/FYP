@@ -5,9 +5,22 @@ import 'core/constants.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
-import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/shelter/shelter_screen.dart';
+import 'screens/shelter/find_shelter_screen.dart';
+import 'models/shelter.dart';
+import 'screens/shelter/shelter_detail_screen.dart';
+import 'screens/shelter/shelter_requests_screen.dart';
+import 'screens/aid/aid_gate_screen.dart';
+import 'screens/shelter/private_housing_screen.dart';
+import 'models/private_housing.dart';
+import 'screens/aid/submit_need_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/profile/complete_profile_screen.dart';
+import 'widgets/main_layout.dart';
+import 'screens/not_found_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -26,9 +39,9 @@ class _AppState extends State<App> {
     _authProvider = AuthProvider();
 
     _router = GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/home',
       refreshListenable: _authProvider,
-      // Only runs after initialized — the builder overlay handles the loading state.
+      errorBuilder: (_, _) => const NotFoundScreen(),
       redirect: (context, state) {
         if (!_authProvider.initialized) return null;
         final isAuth = _authProvider.isAuthenticated;
@@ -41,7 +54,84 @@ class _AppState extends State<App> {
       routes: [
         GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
-        GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+        StatefulShellRoute.indexedStack(
+          builder: (_, _, shell) => MainLayout(navigationShell: shell),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  builder: (_, _) => const HomeScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/shelter',
+                  builder: (_, _) => const ShelterScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'find',
+                      builder: (_, _) => const FindShelterScreen(),
+                      routes: [
+                        GoRoute(
+                          path: ':id',
+                          builder: (_, state) => ShelterDetailScreen(
+                            shelterId: int.parse(state.pathParameters['id']!),
+                            shelter: state.extra is Shelter
+                                ? state.extra as Shelter
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    GoRoute(
+                      path: 'requests',
+                      builder: (_, _) => const ShelterRequestsScreen(),
+                    ),
+                    GoRoute(
+                      path: 'private-housing',
+                      builder: (_, state) => PrivateHousingScreen(
+                        existing: state.extra is PrivateHousing
+                            ? state.extra as PrivateHousing
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/aid',
+                  builder: (_, _) => const AidGateScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'submit-need',
+                      builder: (_, _) => const SubmitNeedScreen(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (_, _) => const ProfileScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'complete',
+                      builder: (_, _) => const CompleteProfileScreen(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
     );
 
@@ -63,8 +153,6 @@ class _AppState extends State<App> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         routerConfig: _router,
-        // Splash overlay while the token/me check is in flight.
-        // Avoids any route redirect edge cases during initialization.
         builder: (context, child) => ListenableBuilder(
           listenable: _authProvider,
           builder: (_, _) {

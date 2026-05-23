@@ -22,7 +22,11 @@ class AuthProvider extends ChangeNotifier {
       if (stored != null) {
         try {
           _token = stored;
-          _user = await AuthService.me();
+          final user = await AuthService.me();
+          if (user.accessPoint != 'civilian') {
+            throw Exception('non-civilian account');
+          }
+          _user = user;
         } catch (_) {
           _token = null;
           _user = null;
@@ -70,6 +74,13 @@ class AuthProvider extends ChangeNotifier {
     _token = result.token;
     _user = result.user;
     notifyListeners();
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      _user = await AuthService.me();
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> logout() async {
