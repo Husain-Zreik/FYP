@@ -207,6 +207,26 @@ class UserController extends Controller
         }
     }
 
+    // POST /api/users/{user}/leave-shelter — civilian leaves their current shelter
+    public function leaveShelter(Request $request, User $user): JsonResponse
+    {
+        $auth = $request->user();
+        abort_if($auth->id !== $user->id || $auth->role !== 'civilian', 403);
+        abort_if($user->shelter_id === null, 422, 'You are not assigned to any shelter.');
+
+        $oldShelterId = (int) $user->shelter_id;
+        $user->update(['shelter_id' => null]);
+
+        $user->civilianProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['housing_status' => 'seeking']
+        );
+
+        self::syncShelterStatus($oldShelterId);
+
+        return response()->json(['message' => 'You have left the shelter.']);
+    }
+
     public function destroy(Request $request, User $user): JsonResponse
     {
         $auth = $request->user();

@@ -127,11 +127,20 @@ class ShelterRequestController extends Controller
     public function accept(Request $request, ShelterRequest $shelterRequest): JsonResponse
     {
         $user = $request->user();
-        abort_if(
-            ! $user->isGovernmentAdmin() &&
-            (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
-            403
-        );
+
+        if ($user->role === 'civilian') {
+            // Civilian accepts an invitation sent to them
+            abort_if($shelterRequest->civilian_id !== $user->id, 403);
+            abort_if($shelterRequest->type !== 'invitation', 422, 'You can only accept invitations.');
+        } else {
+            // Shelter admin / govt admin accepts a join request
+            abort_if(
+                ! $user->isGovernmentAdmin() &&
+                (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
+                403
+            );
+        }
+
         abort_if($shelterRequest->status !== 'pending', 422, 'This request is no longer pending.');
 
         // A civilian can only be in one shelter
@@ -171,11 +180,20 @@ class ShelterRequestController extends Controller
     public function reject(Request $request, ShelterRequest $shelterRequest): JsonResponse
     {
         $user = $request->user();
-        abort_if(
-            ! $user->isGovernmentAdmin() &&
-            (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
-            403
-        );
+
+        if ($user->role === 'civilian') {
+            // Civilian declines an invitation sent to them
+            abort_if($shelterRequest->civilian_id !== $user->id, 403);
+            abort_if($shelterRequest->type !== 'invitation', 422, 'You can only decline invitations.');
+        } else {
+            // Shelter admin / govt admin rejects a join request
+            abort_if(
+                ! $user->isGovernmentAdmin() &&
+                (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
+                403
+            );
+        }
+
         abort_if($shelterRequest->status !== 'pending', 422, 'This request is no longer pending.');
 
         $shelterRequest->update(['status' => 'rejected', 'responded_at' => now()]);
@@ -183,21 +201,29 @@ class ShelterRequestController extends Controller
         return response()->json(['message' => 'Request rejected.']);
     }
 
-    // PATCH /api/shelter-requests/{shelterRequest}/cancel — cancel a sent invitation
+    // PATCH /api/shelter-requests/{shelterRequest}/cancel
+    // Civilians cancel their own join requests; shelter/govt admins cancel sent invitations.
     public function cancel(Request $request, ShelterRequest $shelterRequest): JsonResponse
     {
         $user = $request->user();
-        abort_if(
-            ! $user->isGovernmentAdmin() &&
-            (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
-            403
-        );
-        abort_if($shelterRequest->type !== 'invitation', 422, 'Only sent invitations can be cancelled.');
-        abort_if($shelterRequest->status !== 'pending', 422, 'This invitation is no longer pending.');
+
+        if ($user->role === 'civilian') {
+            abort_if($shelterRequest->civilian_id !== $user->id, 403);
+            abort_if($shelterRequest->type !== 'request', 422, 'Only your own join requests can be cancelled.');
+            abort_if($shelterRequest->status !== 'pending', 422, 'This request is no longer pending.');
+        } else {
+            abort_if(
+                ! $user->isGovernmentAdmin() &&
+                (! $user->isShelterAdmin() || $shelterRequest->shelter_id !== $user->shelter_id),
+                403
+            );
+            abort_if($shelterRequest->type !== 'invitation', 422, 'Only sent invitations can be cancelled.');
+            abort_if($shelterRequest->status !== 'pending', 422, 'This invitation is no longer pending.');
+        }
 
         $shelterRequest->update(['status' => 'rejected', 'responded_at' => now()]);
 
-        return response()->json(['message' => 'Invitation cancelled.']);
+        return response()->json(['message' => 'Request cancelled.']);
     }
 
     // GET /api/civilians/{user}/requests — active requests for a specific civilian
@@ -208,7 +234,6 @@ class ShelterRequestController extends Controller
 
         $items = ShelterRequest::with('shelter')
             ->where('civilian_id', $user->id)
-            ->where('status', 'pending')
             ->latest()
             ->get()
             ->map(fn (ShelterRequest $r) => [

@@ -12,6 +12,7 @@ use App\Http\Controllers\AidRequestController;
 use App\Http\Controllers\CivilianNeedController;
 use App\Http\Controllers\AidDispatchController;
 use App\Http\Controllers\AidScheduleController;
+use App\Http\Controllers\FamilyMemberController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -40,7 +41,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Users
     Route::apiResource('users', UserController::class);
-    Route::post('users/{user}/upload-id', [UserController::class, 'uploadIdDocument']);
+    Route::post('users/{user}/upload-id',       [UserController::class, 'uploadIdDocument']);
+    Route::post('users/{user}/leave-shelter',   [UserController::class, 'leaveShelter']);
 
     // Civilian join requests
     Route::prefix('shelter-requests')->group(function () {
@@ -82,4 +84,7 @@ Route::middleware('auth:api')->group(function () {
     // Aid — schedules
     Route::apiResource('aid-schedules', AidScheduleController::class);
     Route::post('aid-schedules/{aidSchedule}/dispatch', [AidScheduleController::class, 'dispatch']);
+
+    // Family members
+    Route::apiResource('family-members', FamilyMemberController::class)->only(['index', 'store', 'update', 'destroy']);
 });
