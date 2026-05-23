@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\FamilyMemberResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -37,6 +38,7 @@ class UserResource extends JsonResource
                 ];
             }),
             'private_housing'  => $this->whenLoaded('privateHousing'),
+            'family_members'   => FamilyMemberResource::collection($this->whenLoaded('familyMembers')),
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -80,4 +81,5 @@ class User extends Authenticatable
     public function shelter(): BelongsTo           { return $this->belongsTo(Shelter::class); }
     public function civilianProfile(): HasOne       { return $this->hasOne(CivilianProfile::class); }
     public function privateHousing(): HasOne        { return $this->hasOne(\App\Models\CivilianPrivateHousing::class, 'civilian_id'); }
+    public function familyMembers(): HasMany        { return $this->hasMany(FamilyMember::class); }
 }
