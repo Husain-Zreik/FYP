@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/app_sizes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/aid_service.dart';
 import '../../widgets/app_button.dart';
 
 class SubmitNeedScreen extends StatefulWidget {
@@ -14,6 +16,7 @@ class _SubmitNeedScreenState extends State<SubmitNeedScreen> {
   final _descriptionController = TextEditingController();
   String _category = 'food';
   String _urgency = 'medium';
+  bool _loading = false;
 
   static const _categories = [
     ('food', 'Food'),
@@ -35,6 +38,33 @@ class _SubmitNeedScreenState extends State<SubmitNeedScreen> {
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a description.')),
+      );
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      await AidService.submitNeed(
+        category: _category,
+        description: description,
+        urgency: _urgency,
+      );
+      if (mounted) context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -151,12 +181,8 @@ class _SubmitNeedScreenState extends State<SubmitNeedScreen> {
             AppButton(
               label: 'Submit Need',
               icon: Icons.send_rounded,
-              onPressed: () {
-                // TODO: POST /civilian-needs { category, urgency, description }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Need will be submitted via API')),
-                );
-              },
+              loading: _loading,
+              onPressed: _submit,
             ),
           ],
         ),
