@@ -1,3 +1,17 @@
+class ShelterAdmin {
+  final String name;
+  final String? phone;
+  final String? email;
+
+  const ShelterAdmin({required this.name, this.phone, this.email});
+
+  factory ShelterAdmin.fromJson(Map<String, dynamic> json) => ShelterAdmin(
+        name: json['name'] as String,
+        phone: json['phone'] as String?,
+        email: json['email'] as String?,
+      );
+}
+
 class Shelter {
   final int id;
   final String name;
@@ -15,6 +29,7 @@ class Shelter {
   final String? imageUrl;
   final int? civiliansCount;
   final int? staffCount;
+  final ShelterAdmin? admin;
 
   const Shelter({
     required this.id,
@@ -33,6 +48,7 @@ class Shelter {
     this.imageUrl,
     this.civiliansCount,
     this.staffCount,
+    this.admin,
   });
 
   bool get isJoinable =>
@@ -68,5 +84,8 @@ class Shelter {
         imageUrl: json['image_url'] as String?,
         civiliansCount: json['civilians_count'] as int?,
         staffCount: json['staff_count'] as int?,
+        admin: json['admin'] is Map
+            ? ShelterAdmin.fromJson(json['admin'] as Map<String, dynamic>)
+            : null,
       );
 }

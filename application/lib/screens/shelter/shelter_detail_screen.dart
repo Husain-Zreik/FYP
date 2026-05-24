@@ -372,6 +372,12 @@ class _ShelterDetailScreenState extends State<ShelterDetailScreen> {
                     _OccupancyCard(shelter: shelter, s: s),
                   ],
 
+                  // Admin contact card (shown when admin info is available)
+                  if (shelter.admin != null) ...[
+                    SizedBox(height: s.itemGap),
+                    _AdminContactCard(admin: shelter.admin!, s: s),
+                  ],
+
                   SizedBox(height: s.sectionGap),
 
                   // ── Join action ───────────────────────────────────
@@ -575,6 +581,160 @@ class _OccupancyCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ── Admin contact card ───────────────────────────────────────────────────────
+
+class _AdminContactCard extends StatelessWidget {
+  final ShelterAdmin admin;
+  final AppSizes s;
+
+  const _AdminContactCard({required this.admin, required this.s});
+
+  Future<void> _launch(String scheme, String target) async {
+    final uri = Uri.parse('$scheme:$target');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(s.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(s.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.manage_accounts_outlined,
+                  size: 16, color: AppColors.secondary),
+              SizedBox(width: s.itemGap),
+              Text(
+                'Shelter Admin',
+                style: TextStyle(
+                  fontSize: s.bodySm,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSubtle,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: s.itemGap),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.tertiary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.person_rounded,
+                    color: AppColors.secondary, size: 22),
+              ),
+              SizedBox(width: s.itemGap),
+              Expanded(
+                child: Text(
+                  admin.name,
+                  style: TextStyle(
+                    fontSize: s.bodyMd,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (admin.phone != null || admin.email != null) ...[
+            SizedBox(height: s.itemGap),
+            Row(
+              children: [
+                if (admin.phone != null)
+                  Expanded(
+                    child: _ContactButton(
+                      icon: Icons.phone_rounded,
+                      label: admin.phone!,
+                      color: AppColors.success,
+                      bgColor: AppColors.successSurface,
+                      onTap: () => _launch('tel', admin.phone!),
+                      s: s,
+                    ),
+                  ),
+                if (admin.phone != null && admin.email != null)
+                  SizedBox(width: s.itemGap),
+                if (admin.email != null)
+                  Expanded(
+                    child: _ContactButton(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      color: AppColors.secondary,
+                      bgColor: AppColors.tertiary,
+                      onTap: () => _launch('mailto', admin.email!),
+                      s: s,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color bgColor;
+  final VoidCallback onTap;
+  final AppSizes s;
+
+  const _ContactButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
+    required this.s,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: s.itemGap),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(s.borderRadius),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: color),
+            SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: s.caption,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

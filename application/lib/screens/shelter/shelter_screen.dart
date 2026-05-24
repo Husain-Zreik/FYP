@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_sizes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
@@ -238,6 +239,11 @@ class _MyShelterView extends StatefulWidget {
 class _MyShelterViewState extends State<_MyShelterView> {
   bool _leaving = false;
 
+  Future<void> _launch(String scheme, String target) async {
+    final uri = Uri.parse('$scheme:$target');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
   Future<void> _confirmLeave() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -267,9 +273,8 @@ class _MyShelterViewState extends State<_MyShelterView> {
       await auth.refreshUser();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _leaving = false);
@@ -293,9 +298,9 @@ class _MyShelterViewState extends State<_MyShelterView> {
       body: SingleChildScrollView(
         padding: EdgeInsets.all(s.pagePadding),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Shelter card
+            // ── Hero card ───────────────────────────────────────────
             Container(
               padding: EdgeInsets.all(s.cardPadding + 4),
               decoration: BoxDecoration(
@@ -315,11 +320,8 @@ class _MyShelterViewState extends State<_MyShelterView> {
                       color: const Color(0x337C3AED),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.home_work_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                    child: const Icon(Icons.home_work_rounded,
+                        color: Colors.white, size: 28),
                   ),
                   SizedBox(width: s.fieldGap),
                   Expanded(
@@ -336,7 +338,9 @@ class _MyShelterViewState extends State<_MyShelterView> {
                         ),
                         if (shelter?.governorate != null)
                           Text(
-                            shelter!.governorate,
+                            [shelter!.district, shelter.governorate]
+                                .where((v) => v != null && v.isNotEmpty)
+                                .join(', '),
                             style: TextStyle(
                               fontSize: s.bodySm,
                               color: const Color(0xCCFFFFFF),
@@ -348,39 +352,275 @@ class _MyShelterViewState extends State<_MyShelterView> {
                 ],
               ),
             ),
-            SizedBox(height: s.sectionGap),
-            // Details
+
             if (shelter != null) ...[
-              _DetailRow(
+              SizedBox(height: s.itemGap),
+
+              // ── Quick stats row ─────────────────────────────────
+              Row(
+                children: [
+                  if (shelter.capacity != null)
+                    _StatChip(
+                      icon: Icons.people_outline_rounded,
+                      label: '${shelter.capacity} capacity',
+                      s: s,
+                    ),
+                  if (shelter.capacity != null && shelter.rooms != null)
+                    SizedBox(width: s.itemGap),
+                  if (shelter.rooms != null)
+                    _StatChip(
+                      icon: Icons.meeting_room_outlined,
+                      label: '${shelter.rooms} rooms',
+                      s: s,
+                    ),
+                ],
+              ),
+
+              SizedBox(height: s.itemGap),
+
+              // ── Location card ───────────────────────────────────
+              _ShelterInfoCard(
                 icon: Icons.location_on_outlined,
-                label: 'Address',
+                title: 'Location',
                 value: [shelter.address, shelter.district, shelter.governorate]
                     .where((v) => v != null && v.isNotEmpty)
                     .join(', '),
                 s: s,
               ),
-              if (shelter.capacity != null)
-                _DetailRow(
-                  icon: Icons.people_outline,
-                  label: 'Capacity',
-                  value: '${shelter.capacity} people',
-                  s: s,
+
+              SizedBox(height: s.itemGap),
+
+              // ── Contact card ────────────────────────────────────
+              if (shelter.phone != null || shelter.email != null)
+                Container(
+                  padding: EdgeInsets.all(s.cardPadding),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(s.cardRadius),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.contact_phone_outlined,
+                              size: 16, color: AppColors.secondary),
+                          SizedBox(width: s.itemGap),
+                          Text(
+                            'Contact',
+                            style: TextStyle(
+                              fontSize: s.bodySm,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSubtle,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: s.itemGap),
+                      Row(
+                        children: [
+                          if (shelter.phone != null)
+                            Expanded(
+                              child: _ContactAction(
+                                icon: Icons.phone_rounded,
+                                label: shelter.phone!,
+                                color: AppColors.success,
+                                bgColor: AppColors.successSurface,
+                                onTap: () =>
+                                    _launch('tel', shelter.phone!),
+                                s: s,
+                              ),
+                            ),
+                          if (shelter.phone != null &&
+                              shelter.email != null)
+                            SizedBox(width: s.itemGap),
+                          if (shelter.email != null)
+                            Expanded(
+                              child: _ContactAction(
+                                icon: Icons.email_outlined,
+                                label: 'Email',
+                                color: AppColors.secondary,
+                                bgColor: AppColors.tertiary,
+                                onTap: () =>
+                                    _launch('mailto', shelter.email!),
+                                s: s,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              if (shelter.phone != null)
-                _DetailRow(
-                  icon: Icons.phone_outlined,
-                  label: 'Phone',
-                  value: shelter.phone!,
-                  s: s,
+
+              SizedBox(height: s.itemGap),
+
+              // ── View full details ───────────────────────────────
+              AppButton(
+                label: 'View Full Details',
+                icon: Icons.info_outline_rounded,
+                variant: ButtonVariant.secondary,
+                onPressed: () => context.push(
+                  '/shelter/find/${shelter.id}',
+                  extra: shelter,
                 ),
+              ),
             ],
-            SizedBox(height: s.sectionGap),
+
+            SizedBox(height: s.itemGap),
+
+            // ── Leave shelter ───────────────────────────────────
             AppButton(
               label: 'Leave Shelter',
               icon: Icons.exit_to_app_rounded,
               variant: ButtonVariant.danger,
               onPressed: _leaving ? null : _confirmLeave,
               loading: _leaving,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── My Shelter helper widgets ──────────────────────────────────────────────
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final AppSizes s;
+
+  const _StatChip({required this.icon, required this.label, required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+          horizontal: s.cardPadding, vertical: s.itemGap / 2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.secondary),
+          SizedBox(width: s.itemGap / 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: s.caption,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShelterInfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final AppSizes s;
+
+  const _ShelterInfoCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.s,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(s.cardPadding),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(s.cardRadius),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.secondary),
+          SizedBox(width: s.itemGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: s.caption,
+                    color: AppColors.textSubtle,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value.isNotEmpty ? value : '—',
+                  style: TextStyle(
+                    fontSize: s.bodyMd,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.text,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color bgColor;
+  final VoidCallback onTap;
+  final AppSizes s;
+
+  const _ContactAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.bgColor,
+    required this.onTap,
+    required this.s,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: s.itemGap),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(s.borderRadius),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: color),
+            SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: s.caption,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ),
           ],
         ),
