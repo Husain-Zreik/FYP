@@ -53,6 +53,8 @@ class AuthProvider extends ChangeNotifier {
     _token = result.token;
     _user = result.user;
     notifyListeners();
+    // Ensure all relations (civilianProfile, familyMembers, privateHousing) are loaded
+    await refreshUser();
   }
 
   Future<void> register({
@@ -74,6 +76,7 @@ class AuthProvider extends ChangeNotifier {
     _token = result.token;
     _user = result.user;
     notifyListeners();
+    await refreshUser();
   }
 
   Future<void> refreshUser() async {
