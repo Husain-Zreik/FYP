@@ -15,7 +15,11 @@ class ReviewCivilianNeedRequest extends FormRequest
     {
         return [
             'status'        => ['required', 'in:in_review,fulfilled,rejected'],
-            'shelter_notes' => ['nullable', 'string', 'max:500'],
+            'shelter_notes' => [
+                $this->input('status') === 'rejected' ? 'required' : 'nullable',
+                'string',
+                'max:500',
+            ],
         ];
     }
 }

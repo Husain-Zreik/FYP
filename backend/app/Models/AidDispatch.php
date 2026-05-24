@@ -20,6 +20,7 @@ class AidDispatch extends Model
         'notes',
         'status',
         'dispatched_at',
+        'expected_arrival_date',
         'responded_at',
         'received_at',
         'responded_by',
@@ -29,9 +30,10 @@ class AidDispatch extends Model
     protected function casts(): array
     {
         return [
-            'dispatched_at' => 'datetime',
-            'responded_at'  => 'datetime',
-            'received_at'   => 'date',
+            'dispatched_at'         => 'datetime',
+            'expected_arrival_date' => 'date',
+            'responded_at'          => 'datetime',
+            'received_at'           => 'date',
         ];
     }
 

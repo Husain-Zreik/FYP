@@ -80,15 +80,16 @@ class AidDispatchController extends Controller
             }
 
             $dispatch = AidDispatch::create([
-                'level'           => 'government_shelter',
-                'dispatched_by'   => $user->id,
-                'shelter_id'      => $request->shelter_id,
-                'aid_category_id' => $request->aid_category_id,
-                'quantity'        => $request->quantity,
-                'notes'           => $request->notes,
-                'aid_request_id'  => $request->aid_request_id,
-                'status'          => 'pending',
-                'dispatched_at'   => now(),
+                'level'                 => 'government_shelter',
+                'dispatched_by'         => $user->id,
+                'shelter_id'            => $request->shelter_id,
+                'aid_category_id'       => $request->aid_category_id,
+                'quantity'              => $request->quantity,
+                'notes'                 => $request->notes,
+                'expected_arrival_date' => $request->expected_arrival_date,
+                'aid_request_id'        => $request->aid_request_id,
+                'status'                => 'pending',
+                'dispatched_at'         => now(),
             ]);
         } elseif ($user->isShelterScoped()) {
             $civilian = User::where('id', $request->civilian_id)
@@ -99,16 +100,17 @@ class AidDispatchController extends Controller
             abort_if(! $civilian, 422, 'Civilian does not belong to your shelter.');
 
             $dispatch = AidDispatch::create([
-                'level'            => 'shelter_civilian',
-                'dispatched_by'    => $user->id,
-                'shelter_id'       => $user->shelter_id,
-                'civilian_id'      => $request->civilian_id,
-                'aid_category_id'  => $request->aid_category_id,
-                'quantity'         => $request->quantity,
-                'notes'            => $request->notes,
-                'civilian_need_id' => $request->civilian_need_id,
-                'status'           => 'pending',
-                'dispatched_at'    => now(),
+                'level'                 => 'shelter_civilian',
+                'dispatched_by'         => $user->id,
+                'shelter_id'            => $user->shelter_id,
+                'civilian_id'           => $request->civilian_id,
+                'aid_category_id'       => $request->aid_category_id,
+                'quantity'              => $request->quantity,
+                'notes'                 => $request->notes,
+                'expected_arrival_date' => $request->expected_arrival_date,
+                'civilian_need_id'      => $request->civilian_need_id,
+                'status'                => 'pending',
+                'dispatched_at'         => now(),
             ]);
         } else {
             abort(403);
