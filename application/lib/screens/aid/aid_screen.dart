@@ -64,6 +64,9 @@ class _AidScreenState extends State<AidScreen>
   }
 }
 
+String _fmtDate(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')} ${const ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.month - 1]} ${d.year}';
+
 // ── Incoming Aid ───────────────────────────────────────────────────────────
 
 class _IncomingAidTab extends StatefulWidget {
@@ -396,6 +399,21 @@ class _DispatchCard extends StatelessWidget {
                   TextStyle(fontSize: s.bodySm, color: AppColors.textSubtle),
             ),
           ],
+          if (dispatch.isPending && dispatch.expectedArrivalDate != null) ...[
+            SizedBox(height: s.itemGap / 2),
+            Row(
+              children: [
+                const Icon(Icons.schedule_rounded,
+                    size: 13, color: AppColors.textSubtle),
+                SizedBox(width: s.itemGap / 2),
+                Text(
+                  'Expected: ${_fmtDate(dispatch.expectedArrivalDate!)}',
+                  style: TextStyle(
+                      fontSize: s.bodySm, color: AppColors.textSubtle),
+                ),
+              ],
+            ),
+          ],
           if (dispatch.isAccepted && dispatch.receivedAt != null) ...[
             SizedBox(height: s.itemGap / 2),
             Text(
@@ -651,20 +669,52 @@ class _NeedCard extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(s.itemGap),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: need.isRejected
+                    ? AppColors.dangerSurface
+                    : AppColors.surface,
                 borderRadius: BorderRadius.circular(s.borderRadius - 2),
+                border: need.isRejected
+                    ? Border.all(
+                        color: AppColors.danger.withValues(alpha: 0.25))
+                    : null,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.comment_outlined,
-                      size: 14, color: AppColors.textSubtle),
+                  Icon(
+                    need.isRejected
+                        ? Icons.info_outline_rounded
+                        : Icons.comment_outlined,
+                    size: 14,
+                    color: need.isRejected
+                        ? AppColors.danger
+                        : AppColors.textSubtle,
+                  ),
                   SizedBox(width: s.itemGap / 2),
                   Expanded(
-                    child: Text(
-                      need.shelterNotes!,
-                      style: TextStyle(
-                          fontSize: s.bodySm, color: AppColors.textSubtle),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (need.isRejected)
+                          Text(
+                            'Rejection reason',
+                            style: TextStyle(
+                              fontSize: s.caption,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                        if (need.isRejected) SizedBox(height: 2),
+                        Text(
+                          need.shelterNotes!,
+                          style: TextStyle(
+                            fontSize: s.bodySm,
+                            color: need.isRejected
+                                ? AppColors.danger
+                                : AppColors.textSubtle,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

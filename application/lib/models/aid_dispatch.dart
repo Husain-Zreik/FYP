@@ -8,6 +8,7 @@ class AidDispatch {
   final String? notes;
   final String status;
   final DateTime? dispatchedAt;
+  final DateTime? expectedArrivalDate;
   final DateTime? respondedAt;
   final String? receivedAt;
   final String? rejectionReason;
@@ -23,6 +24,7 @@ class AidDispatch {
     this.notes,
     required this.status,
     this.dispatchedAt,
+    this.expectedArrivalDate,
     this.respondedAt,
     this.receivedAt,
     this.rejectionReason,
@@ -44,6 +46,9 @@ class AidDispatch {
         status: json['status'] as String,
         dispatchedAt: json['dispatched_at'] != null
             ? DateTime.tryParse(json['dispatched_at'].toString())
+            : null,
+        expectedArrivalDate: json['expected_arrival_date'] != null
+            ? DateTime.tryParse(json['expected_arrival_date'].toString())
             : null,
         respondedAt: json['responded_at'] != null
             ? DateTime.tryParse(json['responded_at'].toString())
