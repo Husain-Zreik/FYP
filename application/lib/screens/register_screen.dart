@@ -188,8 +188,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       loading: _loading,
                     ),
                     SizedBox(height: s.fieldGap + 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
                       children: [
                         Text(
                           'Already have an account?  ',

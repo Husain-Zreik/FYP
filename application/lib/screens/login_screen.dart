@@ -141,8 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       loading: _loading,
                     ),
                     SizedBox(height: s.fieldGap + 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
                       children: [
                         Text(
                           "Don't have an account?  ",
