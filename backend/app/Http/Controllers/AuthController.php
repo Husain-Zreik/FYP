@@ -28,7 +28,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data'    => [
-                'user'  => new UserResource($user->load('shelter')),
+                'user'  => new UserResource($user->load(['shelter', 'civilianProfile', 'familyMembers', 'privateHousing'])),
                 'token' => $token,
             ],
             'message' => 'Login successful.',
@@ -49,7 +49,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data'    => [
-                'user'  => new UserResource($user),
+                'user'  => new UserResource($user->load(['shelter', 'civilianProfile', 'familyMembers', 'privateHousing'])),
                 'token' => $token,
             ],
             'message' => 'Registration successful.',

@@ -28,6 +28,10 @@ class ShelterResource extends JsonResource
             'image_url'       => $this->image_path ? Storage::disk('public')->url($this->image_path) : null,
             'civilians_count' => $this->whenCounted('civilians_count'),
             'staff_count'     => $this->whenCounted('staff_count'),
+            'admin'           => $this->whenLoaded('staff', function () {
+                $a = $this->staff->firstWhere('role', 'shelter_admin');
+                return $a ? ['name' => $a->name, 'phone' => $a->phone, 'email' => $a->email] : null;
+            }),
             'staff'           => UserResource::collection($this->whenLoaded('staff')),
             'civilians'       => UserResource::collection($this->whenLoaded('civilians')),
             'created_at'      => $this->created_at,
