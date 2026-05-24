@@ -31,14 +31,15 @@ function CivilianAvatar({ name }) {
 }
 
 function SendDispatchPanel({ onClose, onCreated, shelterId }) {
-  const [civilians,  setCivilians]  = useState([])
-  const [categories, setCategories] = useState([])
-  const [civilianId, setCivilianId] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [quantity,   setQuantity]   = useState('')
-  const [notes,      setNotes]      = useState('')
-  const [saving,     setSaving]     = useState(false)
-  const [error,      setError]      = useState(null)
+  const [civilians,    setCivilians]    = useState([])
+  const [categories,   setCategories]   = useState([])
+  const [civilianId,   setCivilianId]   = useState('')
+  const [categoryId,   setCategoryId]   = useState('')
+  const [quantity,     setQuantity]     = useState('')
+  const [notes,        setNotes]        = useState('')
+  const [expectedDate, setExpectedDate] = useState('')
+  const [saving,       setSaving]       = useState(false)
+  const [error,        setError]        = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -67,10 +68,11 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
     setSaving(true)
     try {
       const res = await createAidDispatch({
-        civilian_id:     Number(civilianId),
-        aid_category_id: Number(categoryId),
-        quantity:        Number(quantity),
-        notes:           notes || null,
+        civilian_id:            Number(civilianId),
+        aid_category_id:        Number(categoryId),
+        quantity:               Number(quantity),
+        notes:                  notes || null,
+        expected_arrival_date:  expectedDate || null,
       })
       onCreated(res.data)
       onClose()
@@ -118,6 +120,18 @@ function SendDispatchPanel({ onClose, onCreated, shelterId }) {
             value={quantity}
             onChange={e => setQuantity(e.target.value)}
             className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-text mb-1.5">
+            Expected Arrival Date <span className="text-text-subtle font-normal">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={expectedDate}
+            min={new Date().toISOString().split('T')[0]}
+            onChange={e => setExpectedDate(e.target.value)}
+            className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
           />
         </div>
         <div>
@@ -580,8 +594,11 @@ export default function AidToCiviliansPage() {
       render: (_, d) => (
         <div>
           <Badge variant={STATUS_BADGE[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+          {d.status === 'pending' && d.expected_arrival_date && (
+            <p className="text-xs text-text-muted mt-0.5">Expected {fmt(d.expected_arrival_date)}</p>
+          )}
           {d.status === 'accepted' && (
-            <p className="text-xs text-success mt-0.5">{fmt(d.received_at)}</p>
+            <p className="text-xs text-success mt-0.5">Received {fmt(d.received_at)}</p>
           )}
           {d.status === 'rejected' && d.rejection_reason && (
             <p className="text-xs text-danger mt-0.5 max-w-32 truncate">{d.rejection_reason}</p>

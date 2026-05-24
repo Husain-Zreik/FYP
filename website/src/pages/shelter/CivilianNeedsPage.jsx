@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Clock, Eye, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { RefreshCw, Clock, Eye, CheckCircle, XCircle, AlertCircle, Send } from 'lucide-react'
 import ShelterLayout from '../../components/layouts/ShelterLayout'
 import { Button, Badge, Table, SlidePanel, Select, StatCard, FilterBar } from '../../components/ui'
 import { getCivilianNeeds, reviewCivilianNeed } from '../../api/civilianNeeds'
+import { createAidDispatch } from '../../api/aidDispatches'
+import { getAidCategories } from '../../api/aidCategories'
 import { useUiStore } from '../../store/uiStore'
 
 const CATEGORY_BADGE = {
@@ -72,13 +74,29 @@ function Row({ label, value }) {
 }
 
 function ReviewPanel({ need, onClose, onReviewed }) {
-  const [status,  setStatus]  = useState('')
-  const [notes,   setNotes]   = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [error,   setError]   = useState(null)
+  const [status,       setStatus]       = useState('')
+  const [notes,        setNotes]        = useState('')
+  const [saving,       setSaving]       = useState(false)
+  const [error,        setError]        = useState(null)
+  // Send aid sub-form
+  const [sendAid,      setSendAid]      = useState(false)
+  const [categories,   setCategories]   = useState([])
+  const [dispatchCat,  setDispatchCat]  = useState('')
+  const [dispatchQty,  setDispatchQty]  = useState('')
+  const [arrivalDate,  setArrivalDate]  = useState('')
 
-  const civilian  = need.civilian ?? need.user ?? {}
-  const isOpen    = need.status === 'pending' || need.status === 'in_review'
+  const civilian = need.civilian ?? need.user ?? {}
+  const isOpen   = need.status === 'pending' || need.status === 'in_review'
+  const today    = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    getAidCategories().then(res => setCategories(res.data ?? [])).catch(() => {})
+  }, [])
+
+  const categoryOpts = [
+    { value: '', label: '— Select category —' },
+    ...categories.map(c => ({ value: String(c.id), label: `${c.name} (${c.unit})` })),
+  ]
 
   function formatDate(str) {
     if (!str) return '—'
@@ -87,10 +105,28 @@ function ReviewPanel({ need, onClose, onReviewed }) {
 
   async function handleSave() {
     if (!status) return
+    if (status === 'rejected' && !notes.trim()) {
+      setError('A rejection reason is required so the civilian knows why their need was declined.')
+      return
+    }
+    if (sendAid && status === 'fulfilled' && (!dispatchCat || !dispatchQty)) {
+      setError('Please select a category and quantity for the aid dispatch.')
+      return
+    }
     setError(null)
     setSaving(true)
     try {
       const res = await reviewCivilianNeed(need.id, { status, notes: notes || null })
+      if (sendAid && status === 'fulfilled' && dispatchCat && dispatchQty) {
+        const civilianId = need.civilian_id ?? civilian.id
+        await createAidDispatch({
+          civilian_id:            Number(civilianId),
+          aid_category_id:        Number(dispatchCat),
+          quantity:               Number(dispatchQty),
+          expected_arrival_date:  arrivalDate || null,
+          civilian_need_id:       need.id,
+        })
+      }
       onReviewed(res.data)
       onClose()
     } catch (err) {
@@ -149,7 +185,9 @@ function ReviewPanel({ need, onClose, onReviewed }) {
             {need.reviewed_at && <Row label="Date" value={formatDate(need.reviewed_at)} />}
             {need.shelter_notes && (
               <div className="pt-1">
-                <p className="text-xs text-text-muted mb-1">Notes</p>
+                <p className={`text-xs mb-1 ${need.status === 'rejected' ? 'text-danger' : 'text-text-muted'}`}>
+                  {need.status === 'rejected' ? 'Rejection reason' : 'Notes'}
+                </p>
                 <p className="text-sm text-text leading-relaxed">{need.shelter_notes}</p>
               </div>
             )}
@@ -161,20 +199,77 @@ function ReviewPanel({ need, onClose, onReviewed }) {
             <Select
               label="Update status"
               value={status}
-              onChange={setStatus}
+              onChange={v => { setStatus(v); if (v !== 'fulfilled') setSendAid(false) }}
               placeholder="Select new status"
               options={REVIEW_STATUS_OPTS}
             />
             <div>
-              <label className="block text-sm font-semibold text-text mb-1.5">Notes</label>
+              <label className="block text-sm font-semibold text-text mb-1.5">
+                {status === 'rejected' ? (
+                  <span>Rejection reason <span className="text-danger">*</span></span>
+                ) : 'Notes'}
+              </label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                placeholder="Add notes about how you helped or why you rejected..."
+                placeholder={
+                  status === 'rejected'
+                    ? 'Explain why this need cannot be fulfilled…'
+                    : 'Add notes for the civilian…'
+                }
                 rows={3}
                 className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
               />
             </div>
+
+            {status === 'fulfilled' && (
+              <div className="border border-border rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSendAid(v => !v)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface hover:bg-surface-2 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send size={15} className="text-secondary shrink-0" />
+                    <span className="text-sm font-semibold text-text">Send aid to this civilian</span>
+                  </div>
+                  <span className="text-xs text-text-muted">{sendAid ? 'Hide ▲' : 'Expand ▼'}</span>
+                </button>
+                {sendAid && (
+                  <div className="px-4 pb-4 pt-2 space-y-3 bg-background">
+                    <Select
+                      label="Aid Category"
+                      value={dispatchCat}
+                      onChange={setDispatchCat}
+                      options={categoryOpts}
+                    />
+                    <div>
+                      <label className="block text-sm font-semibold text-text mb-1.5">Quantity</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={dispatchQty}
+                        onChange={e => setDispatchQty(e.target.value)}
+                        className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-text mb-1.5">
+                        Expected Arrival Date <span className="text-text-subtle font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={arrivalDate}
+                        min={today}
+                        onChange={e => setArrivalDate(e.target.value)}
+                        className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-3 justify-end">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button loading={saving} disabled={!status} onClick={handleSave}>Save</Button>
