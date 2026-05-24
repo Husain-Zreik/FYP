@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 abstract final class AppConstants {
   static const appName = 'Nuzuh';
 
-  // Android emulator → host machine localhost.
-  // Override at build time: --dart-define=API_BASE_URL=http://192.168.x.x:8000/api
-  static const apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api',
-  );
+  static String get apiBaseUrl {
+    const override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) return override;
+    // Web (Chrome) hits localhost directly; Android emulator needs 10.0.2.2
+    return kIsWeb
+        ? 'http://localhost:8000/api'
+        : 'http://10.0.2.2:8000/api';
+  }
 }
