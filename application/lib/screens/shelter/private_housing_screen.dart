@@ -94,7 +94,15 @@ class _PrivateHousingScreenState extends State<PrivateHousingScreen> {
         if (_notes.text.trim().isNotEmpty) 'notes': _notes.text.trim(),
       });
       await auth.refreshUser();
-      if (mounted) context.canPop() ? context.pop() : context.go('/shelter');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(widget.existing != null
+              ? 'Housing details updated.'
+              : 'Private housing registered successfully.'),
+          backgroundColor: AppColors.success,
+        ));
+        context.go('/home');
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {

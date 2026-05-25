@@ -20,6 +20,8 @@ return new class extends Migration
             $table->text('government_notes')->nullable();
             $table->foreignId('reviewed_by')->nullable()->nullOnDelete()->constrained('users');
             $table->timestamp('reviewed_at')->nullable();
+            $table->date('received_at')->nullable();
+            $table->text('shelter_received_notes')->nullable();
             $table->timestamps();
         });
     }

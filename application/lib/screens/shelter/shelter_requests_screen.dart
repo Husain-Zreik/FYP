@@ -65,12 +65,16 @@ class _ShelterRequestsScreenState extends State<ShelterRequestsScreen> {
     try {
       await ShelterService.acceptInvitation(req.id);
       if (mounted) {
-        // Refresh user so shelter assignment is reflected app-wide
         await context.read<AuthProvider>().refreshUser();
-        // Reload the full list — the backend cancelled all other pending
-        // requests/invitations for this civilian on acceptance
-        if (mounted) await _load();
-        if (mounted) _showSnack('Invitation accepted! You are now a member.');
+        if (!mounted) return;
+        if (context.canPop()) {
+          // Pushed from home/shelter screen — pop back; caller refreshes itself
+          context.pop();
+        } else {
+          // Aid-gate tab: AidGateScreen detects isHoused and switches to AidScreen
+          await _load();
+          if (mounted) _showSnack('Invitation accepted! You are now a member.');
+        }
       }
     } on ApiException catch (e) {
       if (mounted) _showSnack(e.message, error: true);

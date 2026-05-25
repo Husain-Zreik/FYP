@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             ShelterSeeder::class,
             UserSeeder::class,
             CivilianProfileSeeder::class,
+            FamilyMemberSeeder::class,
             RoleCapabilitySeeder::class,
             AidCategorySeeder::class,
             AidBatchSeeder::class,

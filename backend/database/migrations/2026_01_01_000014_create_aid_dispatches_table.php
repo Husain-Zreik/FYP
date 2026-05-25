@@ -22,6 +22,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
             $table->timestamp('dispatched_at')->useCurrent();
+            $table->date('expected_arrival_date')->nullable();
             $table->timestamp('responded_at')->nullable();
             $table->date('received_at')->nullable();
             $table->foreignId('responded_by')->nullable()->nullOnDelete()->constrained('users');

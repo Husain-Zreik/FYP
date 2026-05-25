@@ -48,4 +48,8 @@ class ShelterService {
     final data = await ApiClient.get('/shelters/$id');
     return Shelter.fromJson(data as Map<String, dynamic>);
   }
+
+  static Future<void> leaveShelter(int userId) async {
+    await ApiClient.post('/users/$userId/leave-shelter', {});
+  }
 }

@@ -12,22 +12,21 @@ class ShelterRequestSeeder extends Seeder
     public function run(): void
     {
         // ─── Invitations — shelter admin invited an unassigned civilian ────
-        // These simulate shelters reaching out to known civilians
         $invitations = [
             [
-                'shelter_code'   => 'MTL-001', // Ghazir — has space (cap=40, 10 civilians)
-                'civilian_email' => 'rabih.haddad28@gmail.com',
-                'initiated_by'   => 'tony.gemayel@nuzuh.lb', // Ghazir admin
+                'shelter_code'   => 'BEK-001', // Chtoura — has space (cap=60)
+                'civilian_email' => 'civilian3@nuzuh.com', // Ahmad Fares — primary showcase (seeking)
+                'initiated_by'   => 'youssef.karami@nuzuh.lb',
             ],
             [
-                'shelter_code'   => 'SOU-001', // Saida — has space (cap=45, 10 civilians)
-                'civilian_email' => 'sanaa.saleh28@gmail.com',
-                'initiated_by'   => 'ali.hassan@nuzuh.lb', // Saida admin
+                'shelter_code'   => 'MTL-001', // Ghazir — has space (cap=40)
+                'civilian_email' => 'rabih.haddad@gmail.com',
+                'initiated_by'   => 'tony.gemayel@nuzuh.lb',
             ],
             [
-                'shelter_code'   => 'BEK-001', // Chtoura — has space (cap=60, 10 civilians)
-                'civilian_email' => 'naser.hassan28@gmail.com',
-                'initiated_by'   => 'youssef.karami@nuzuh.lb', // Chtoura admin
+                'shelter_code'   => 'SOU-001', // Saida — has space (cap=45)
+                'civilian_email' => 'sanaa.saleh@gmail.com',
+                'initiated_by'   => 'ali.hassan@nuzuh.lb',
             ],
         ];
 
@@ -48,15 +47,10 @@ class ShelterRequestSeeder extends Seeder
         }
 
         // ─── Requests — civilian asked to join a shelter ───────────────────
-        // These simulate civilians using the mobile app to request placement
         $requests = [
             [
-                'shelter_code'   => 'NOR-002', // Koura — has space (cap=20, 8 civilians)
-                'civilian_email' => 'aline.ibrahim28@gmail.com',
-            ],
-            [
-                'shelter_code'   => 'BEK-001', // Chtoura — has space
-                'civilian_email' => 'oussama.khalil28@gmail.com',
+                'shelter_code'   => 'NOR-002', // Koura — has space (cap=20)
+                'civilian_email' => 'naser.hassan@gmail.com',
             ],
         ];
 

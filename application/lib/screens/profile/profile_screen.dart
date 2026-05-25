@@ -7,6 +7,7 @@ import '../../models/family_member.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_client.dart';
 import '../../services/family_member_service.dart';
+import '../../services/shelter_service.dart';
 import '../../widgets/app_button.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -339,25 +340,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             SizedBox(height: s.sectionGap),
 
-            // ── Shelter ────────────────────────────────────────────────
-            _SectionHeader(title: 'Shelter', s: s),
+            // ── Housing ────────────────────────────────────────────────
+            _SectionHeader(title: 'Housing', s: s),
             SizedBox(height: s.itemGap),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(s.cardRadius),
-                border: Border.all(color: AppColors.border),
+            if (user?.hasShelter == true) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(s.cardRadius),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: _InfoRow(
+                  icon: Icons.home_work_outlined,
+                  label: 'Shelter',
+                  value: user?.shelter?.name ?? 'Assigned',
+                  s: s,
+                  last: true,
+                ),
               ),
-              child: _InfoRow(
-                icon: Icons.home_work_outlined,
-                label: 'Status',
-                value: user?.hasShelter == true
-                    ? user?.shelter?.name ?? 'Assigned'
-                    : 'Not assigned to a shelter',
-                s: s,
-                last: true,
+              SizedBox(height: s.itemGap),
+              _LeaveShelterButton(userId: user!.id, s: s),
+            ] else if (user?.civilianProfile?.housingStatus == 'private') ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(s.cardRadius),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.home_rounded,
+                      label: 'Status',
+                      value: 'Private housing',
+                      s: s,
+                    ),
+                    if (user?.privateHousing?.address != null)
+                      _InfoRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Address',
+                        value: user!.privateHousing!.address,
+                        s: s,
+                      ),
+                    if (user?.privateHousing?.governorate != null)
+                      _InfoRow(
+                        icon: Icons.map_outlined,
+                        label: 'Governorate',
+                        value: user!.privateHousing!.governorate,
+                        s: s,
+                        last: true,
+                      ),
+                  ],
+                ),
               ),
-            ),
+              SizedBox(height: s.itemGap),
+              OutlinedButton.icon(
+                onPressed: () => context.push(
+                  '/shelter/private-housing',
+                  extra: user?.privateHousing,
+                ),
+                icon: const Icon(Icons.edit_rounded, size: 16),
+                label: const Text('Edit Housing Details'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                  side: const BorderSide(color: AppColors.secondary),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+              ),
+            ] else ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(s.cardRadius),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: _InfoRow(
+                  icon: Icons.home_work_outlined,
+                  label: 'Status',
+                  value: 'Not assigned to a shelter',
+                  s: s,
+                  last: true,
+                ),
+              ),
+            ],
             SizedBox(height: s.sectionGap),
 
             // ── Logout ─────────────────────────────────────────────────
@@ -490,7 +555,7 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (action != null) action!,
+        ?action,
       ],
     );
   }
@@ -543,6 +608,109 @@ class _InfoRow extends StatelessWidget {
         ),
         if (!last) Divider(height: 1, color: AppColors.border),
       ],
+    );
+  }
+}
+
+// ── Leave shelter button ──────────────────────────────────────────────────────
+
+class _LeaveShelterButton extends StatefulWidget {
+  final int userId;
+  final AppSizes s;
+  const _LeaveShelterButton({required this.userId, required this.s});
+
+  @override
+  State<_LeaveShelterButton> createState() => _LeaveShelterButtonState();
+}
+
+class _LeaveShelterButtonState extends State<_LeaveShelterButton> {
+  bool _loading = false;
+
+  Future<void> _confirm() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave shelter?'),
+        content: const Text(
+          'Your pending aid requests and incoming dispatches will be cancelled. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Leave',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _loading = true);
+    try {
+      await ShelterService.leaveShelter(widget.userId);
+      if (mounted) await context.read<AuthProvider>().refreshUser();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('You have left the shelter.'),
+          backgroundColor: AppColors.success,
+        ));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _loading ? null : _confirm,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: _loading ? 0.6 : 1.0,
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.dangerSurface,
+            borderRadius: BorderRadius.circular(widget.s.borderRadius),
+            border: Border.all(color: const Color(0x4DEF4444)),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.danger),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.exit_to_app_rounded,
+                        size: 16, color: AppColors.danger),
+                    SizedBox(width: widget.s.itemGap),
+                    Text(
+                      'Leave Shelter',
+                      style: TextStyle(
+                        fontSize: widget.s.bodyMd,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }

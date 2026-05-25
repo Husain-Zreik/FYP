@@ -56,13 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _acceptInvite(ShelterRequest req) async {
+    setState(() => _loading = true);
     final auth = context.read<AuthProvider>();
     try {
       await ShelterService.acceptInvitation(req.id);
       await auth.refreshUser();
-      _load();
+      if (mounted) await _load();
     } catch (e) {
       if (mounted) {
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to accept: $e')),
         );

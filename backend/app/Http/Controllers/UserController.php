@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\UserResource;
+use App\Models\AidDispatch;
+use App\Models\CivilianNeed;
 use App\Models\CivilianPrivateHousing;
 use App\Models\Shelter;
 use App\Models\User;
@@ -221,6 +223,24 @@ class UserController extends Controller
             ['user_id' => $user->id],
             ['housing_status' => 'seeking']
         );
+
+        // Cancel pending needs — shelter can no longer serve a departed civilian
+        CivilianNeed::where('civilian_id', $user->id)
+            ->whereIn('status', ['pending', 'in_review'])
+            ->update([
+                'status'       => 'rejected',
+                'shelter_notes' => 'Cancelled — civilian left the shelter.',
+            ]);
+
+        // Cancel pending shelter→civilian dispatches (no stock refund; shelf-civilian stock is not tracked in batches)
+        AidDispatch::where('civilian_id', $user->id)
+            ->where('level', 'shelter_civilian')
+            ->where('status', 'pending')
+            ->update([
+                'status'           => 'rejected',
+                'rejection_reason' => 'Civilian left the shelter.',
+                'responded_at'     => now(),
+            ]);
 
         self::syncShelterStatus($oldShelterId);
 

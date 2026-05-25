@@ -14,25 +14,28 @@ class CivilianNeedSeeder extends Seeder
     {
         $shelters = Shelter::orderBy('id')->take(4)->get();
 
-        $shelter1 = $shelters->get(0);
-        $shelter2 = $shelters->get(1);
-        $shelter3 = $shelters->get(2);
-        $shelter4 = $shelters->get(3);
+        $shelter1 = $shelters->get(0); // BEY-001
+        $shelter2 = $shelters->get(1); // BEY-002
+        $shelter3 = $shelters->get(2); // MTL-001
+        $shelter4 = $shelters->get(3); // NOR-001
 
-        $civilians1 = User::where('role', 'civilian')->where('shelter_id', $shelter1->id)->get();
+        // Primary showcase civilian at BEY-001
+        $ali = User::where('email', 'civilian@nuzuh.com')->first();
+
+        $civilians1 = User::where('role', 'civilian')->where('shelter_id', $shelter1->id)
+            ->where('email', '!=', 'civilian@nuzuh.com')->get();
         $civilians2 = User::where('role', 'civilian')->where('shelter_id', $shelter2->id)->get();
         $civilians3 = User::where('role', 'civilian')->where('shelter_id', $shelter3->id)->get();
         $civilians4 = User::where('role', 'civilian')->where('shelter_id', $shelter4->id)->get();
 
-        $admin1 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter1->id)->first();
+        $admin1 = User::where('email', 'shelter@nuzuh.com')->first();
         $admin2 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter2->id)->first();
         $admin3 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter3->id)->first();
-        $admin4 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter4->id)->first();
 
         $needs = [
-            // 1 — shelter 1, civilian 1
+            // 1 — shelter 1, Ali Haddad (showcase civilian) — pending, high urgency
             [
-                'civilian_id'   => $civilians1->get(0)?->id,
+                'civilian_id'   => $ali?->id,
                 'shelter_id'    => $shelter1->id,
                 'category'      => 'food',
                 'description'   => 'My family of 4 has not received a food parcel in 2 weeks. We are running out of provisions.',
@@ -45,7 +48,7 @@ class CivilianNeedSeeder extends Seeder
             ],
             // 2 — shelter 1, civilian 2
             [
-                'civilian_id'   => $civilians1->get(1)?->id,
+                'civilian_id'   => $civilians1->get(0)?->id,
                 'shelter_id'    => $shelter1->id,
                 'category'      => 'medical',
                 'description'   => 'I have a chronic back condition and need a proper mattress. Currently sleeping on the floor.',
@@ -134,9 +137,9 @@ class CivilianNeedSeeder extends Seeder
                 'reviewed_at'   => null,
                 'created_at'    => Carbon::now()->subDays(2),
             ],
-            // 9 — shelter 1, civilian 3 (fallback to civilian 1)
+            // 9 — shelter 1, civilian 3 — fulfilled
             [
-                'civilian_id'   => ($civilians1->get(2) ?? $civilians1->get(0))?->id,
+                'civilian_id'   => $civilians1->get(1)?->id,
                 'shelter_id'    => $shelter1->id,
                 'category'      => 'clothing',
                 'description'   => 'I lost all my belongings when I had to evacuate. I need basic clothing items for daily use.',
@@ -147,18 +150,18 @@ class CivilianNeedSeeder extends Seeder
                 'reviewed_at'   => Carbon::now()->subWeeks(3),
                 'created_at'    => Carbon::now()->subWeeks(4),
             ],
-            // 10 — shelter 2, civilian 3 (fallback to civilian 1)
+            // 10 — shelter 1, Ali Haddad (showcase) — in_review
             [
-                'civilian_id'   => ($civilians2->get(2) ?? $civilians2->get(0))?->id,
-                'shelter_id'    => $shelter2->id,
-                'category'      => 'other',
-                'description'   => 'I need reading glasses — I am visually impaired and cannot function without them. Mine broke during the evacuation.',
+                'civilian_id'   => $ali?->id,
+                'shelter_id'    => $shelter1->id,
+                'category'      => 'medical',
+                'description'   => 'My elderly father (Nasser Haddad, housed with me) requires a wheelchair. He can no longer walk without support.',
                 'urgency'       => 'high',
-                'status'        => 'pending',
-                'shelter_notes' => null,
-                'reviewed_by'   => null,
-                'reviewed_at'   => null,
-                'created_at'    => Carbon::now()->subDays(3),
+                'status'        => 'in_review',
+                'shelter_notes' => 'Checking with medical aid partners for wheelchair availability.',
+                'reviewed_by'   => $admin1?->id,
+                'reviewed_at'   => Carbon::now()->subDays(1),
+                'created_at'    => Carbon::now()->subDays(4),
             ],
         ];
 

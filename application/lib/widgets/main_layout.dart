@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
+import '../providers/auth_provider.dart';
 
 class MainLayout extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -45,6 +47,8 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isHoused =
+        context.watch<AuthProvider>().user?.hasShelter ?? false;
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
@@ -54,25 +58,32 @@ class _NavBar extends StatelessWidget {
       shadowColor: AppColors.border,
       elevation: 1,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      destinations: const [
-        NavigationDestination(
+      destinations: [
+        const NavigationDestination(
           icon: Icon(Icons.home_outlined, color: AppColors.textSubtle),
           selectedIcon: Icon(Icons.home_rounded, color: AppColors.secondary),
           label: 'Home',
         ),
-        NavigationDestination(
+        const NavigationDestination(
           icon: Icon(Icons.home_work_outlined, color: AppColors.textSubtle),
           selectedIcon:
               Icon(Icons.home_work_rounded, color: AppColors.secondary),
           label: 'Shelter',
         ),
         NavigationDestination(
-          icon: Icon(Icons.favorite_border_rounded, color: AppColors.textSubtle),
-          selectedIcon:
-              Icon(Icons.favorite_rounded, color: AppColors.secondary),
-          label: 'Aid',
+          icon: Icon(
+            isHoused
+                ? Icons.favorite_border_rounded
+                : Icons.mail_outline_rounded,
+            color: AppColors.textSubtle,
+          ),
+          selectedIcon: Icon(
+            isHoused ? Icons.favorite_rounded : Icons.mail_rounded,
+            color: AppColors.secondary,
+          ),
+          label: isHoused ? 'Aid' : 'Requests',
         ),
-        NavigationDestination(
+        const NavigationDestination(
           icon: Icon(Icons.person_outline_rounded, color: AppColors.textSubtle),
           selectedIcon: Icon(Icons.person_rounded, color: AppColors.secondary),
           label: 'Profile',
