@@ -176,6 +176,40 @@ class AidDispatchSeeder extends Seeder
                 'responded_by'         => null,
                 'rejection_reason'     => null,
             ],
+            // 9 — gov → shelter 1, Food Parcels, pending (showcase shelter — visible in Incoming Aid)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter1->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catFood->id,
+                'quantity'             => 40,
+                'notes'                => 'Supplementary food allocation for new arrivals',
+                'status'               => 'pending',
+                'dispatched_at'        => Carbon::now()->subDays(2),
+                'expected_arrival_date'=> Carbon::now()->addDays(4)->toDateString(),
+                'responded_at'         => null,
+                'received_at'          => null,
+                'responded_by'         => null,
+                'rejection_reason'     => null,
+            ],
+            // 10 — shelter 1 admin → Ali Haddad, Medical Kits, rejected (showcase civilian)
+            [
+                'level'                => 'shelter_civilian',
+                'dispatched_by'        => $shelterAdmin1?->id,
+                'shelter_id'           => $shelter1->id,
+                'civilian_id'          => $ali?->id,
+                'aid_category_id'      => $catMedical->id,
+                'quantity'             => 1,
+                'notes'                => 'General first-aid kit',
+                'status'               => 'rejected',
+                'dispatched_at'        => Carbon::now()->subDays(5),
+                'expected_arrival_date'=> null,
+                'responded_at'         => Carbon::now()->subDays(4),
+                'received_at'          => null,
+                'responded_by'         => $ali?->id,
+                'rejection_reason'     => 'Already received a first-aid kit this month from a visiting clinic.',
+            ],
         ];
 
         foreach ($dispatches as $data) {

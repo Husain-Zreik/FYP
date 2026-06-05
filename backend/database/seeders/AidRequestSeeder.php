@@ -171,6 +171,51 @@ class AidRequestSeeder extends Seeder
                 'created_by'         => $staff4->id,
                 'created_at'         => Carbon::now()->subDay(),
             ],
+            // 10 — shelter1, partially_approved (showcase shelter — full status coverage)
+            [
+                'shelter_id'         => $shelter1->id,
+                'aid_category_id'    => $catBlankets->id,
+                'quantity_requested' => 60,
+                'urgency'            => 'high',
+                'reason'             => 'A cold wave is forecast — we need blankets for all 30 residents plus a small reserve.',
+                'status'             => 'partially_approved',
+                'quantity_approved'  => 40,
+                'government_notes'   => 'Partially approved — 40 blankets dispatched now, remainder to follow next shipment.',
+                'reviewed_by'        => $govAdmin->id,
+                'reviewed_at'        => Carbon::now()->subDays(3),
+                'created_by'         => $staff1->id,
+                'created_at'         => Carbon::now()->subDays(8),
+            ],
+            // 11 — shelter1, rejected (showcase shelter)
+            [
+                'shelter_id'         => $shelter1->id,
+                'aid_category_id'    => $catCash->id,
+                'quantity_requested' => 1500,
+                'urgency'            => 'low',
+                'reason'             => 'Requesting discretionary cash to cover minor facility improvements.',
+                'status'             => 'rejected',
+                'quantity_approved'  => null,
+                'government_notes'   => 'Cash disbursements require Ministry of Finance approval. Please use the official portal.',
+                'reviewed_by'        => $govAdmin->id,
+                'reviewed_at'        => Carbon::now()->subDays(7),
+                'created_by'         => $staff1->id,
+                'created_at'         => Carbon::now()->subWeeks(2),
+            ],
+            // 12 — shelter1, fulfilled (showcase shelter)
+            [
+                'shelter_id'         => $shelter1->id,
+                'aid_category_id'    => $catHygiene->id,
+                'quantity_requested' => 30,
+                'urgency'            => 'medium',
+                'reason'             => 'Monthly hygiene kit distribution for all families in the shelter.',
+                'status'             => 'fulfilled',
+                'quantity_approved'  => 30,
+                'government_notes'   => 'Dispatched and confirmed received by the shelter.',
+                'reviewed_by'        => $govAdmin->id,
+                'reviewed_at'        => Carbon::now()->subWeeks(2),
+                'created_by'         => $staff1->id,
+                'created_at'         => Carbon::now()->subWeeks(3),
+            ],
         ];
 
         foreach ($requests as $data) {

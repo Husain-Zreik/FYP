@@ -129,5 +129,28 @@ class CivilianProfileSeeder extends Seeder
                 'housing_status'   => $housing,
             ]);
         }
+
+        // ── Backfill — every remaining civilian gets a complete profile ────────
+        // Guarantees the demo can browse a full profile (and ID document) for
+        // every civilian, not just the hand-authored showcase accounts above.
+        User::where('role', 'civilian')
+            ->whereDoesntHave('civilianProfile')
+            ->orderBy('id')
+            ->get()
+            ->each(function (User $user) {
+                $year       = 1972 + ($user->id % 32);
+                $month      = str_pad(($user->id % 12) + 1, 2, '0', STR_PAD_LEFT);
+                $day        = str_pad(($user->id % 27) + 1, 2, '0', STR_PAD_LEFT);
+                $hasShelter = (bool) $user->shelter_id;
+
+                $user->civilianProfile()->create([
+                    'date_of_birth'    => "{$year}-{$month}-{$day}",
+                    'gender'           => $user->id % 2 === 0 ? 'female' : 'male',
+                    'current_location' => $hasShelter ? ($user->shelter?->name ?? 'Assigned shelter') : 'Temporary accommodation',
+                    'id_type'          => 'national_id',
+                    'id_number'        => 'LB-' . $year . '-' . (800000 + $user->id),
+                    'housing_status'   => $hasShelter ? 'shelter' : 'seeking',
+                ]);
+            });
     }
 }

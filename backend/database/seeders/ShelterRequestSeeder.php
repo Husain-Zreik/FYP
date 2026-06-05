@@ -68,5 +68,32 @@ class ShelterRequestSeeder extends Seeder
                 ]
             );
         }
+
+        // ─── Resolved history (accepted + rejected) for demo completeness ──────
+        $resolved = [
+            ['shelter_code' => 'BEY-001', 'civilian_email' => 'fatima.hassan@gmail.com', 'type' => 'request',    'status' => 'accepted'],
+            ['shelter_code' => 'BEY-002', 'civilian_email' => 'hassan.khalil@gmail.com', 'type' => 'invitation', 'status' => 'accepted'],
+            ['shelter_code' => 'NOR-001', 'civilian_email' => 'rabih.haddad@gmail.com',  'type' => 'request',    'status' => 'rejected'],
+        ];
+
+        foreach ($resolved as $r) {
+            $shelter  = Shelter::where('code', $r['shelter_code'])->first();
+            $civilian = User::where('email', $r['civilian_email'])->first();
+            if (! $shelter || ! $civilian) continue;
+
+            $initiator = $r['type'] === 'invitation'
+                ? User::where('role', 'shelter_admin')->where('shelter_id', $shelter->id)->first()
+                : $civilian;
+            if (! $initiator) continue;
+
+            ShelterRequest::firstOrCreate(
+                ['civilian_id' => $civilian->id, 'shelter_id' => $shelter->id, 'status' => $r['status']],
+                [
+                    'type'         => $r['type'],
+                    'initiated_by' => $initiator->id,
+                    'responded_at' => now()->subDays(rand(2, 20)),
+                ]
+            );
+        }
     }
 }

@@ -31,6 +31,7 @@ class CivilianNeedSeeder extends Seeder
         $admin1 = User::where('email', 'shelter@nuzuh.com')->first();
         $admin2 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter2->id)->first();
         $admin3 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter3->id)->first();
+        $admin4 = User::where('role', 'shelter_admin')->where('shelter_id', $shelter4->id)->first();
 
         $needs = [
             // 1 — shelter 1, Ali Haddad (showcase civilian) — pending, high urgency
@@ -161,6 +162,71 @@ class CivilianNeedSeeder extends Seeder
                 'shelter_notes' => 'Checking with medical aid partners for wheelchair availability.',
                 'reviewed_by'   => $admin1?->id,
                 'reviewed_at'   => Carbon::now()->subDays(1),
+                'created_at'    => Carbon::now()->subDays(4),
+            ],
+            // 11 — shelter 1, Ali Haddad (showcase) — fulfilled
+            [
+                'civilian_id'   => $ali?->id,
+                'shelter_id'    => $shelter1->id,
+                'category'      => 'hygiene',
+                'description'   => 'We ran out of soap and shampoo for the whole family. Requesting a hygiene kit.',
+                'urgency'       => 'medium',
+                'status'        => 'fulfilled',
+                'shelter_notes' => 'Hygiene kit provided from shelter stock. Receipt confirmed by the resident.',
+                'reviewed_by'   => $admin1?->id,
+                'reviewed_at'   => Carbon::now()->subWeeks(2),
+                'created_at'    => Carbon::now()->subWeeks(3),
+            ],
+            // 12 — shelter 1, Ali Haddad (showcase) — rejected
+            [
+                'civilian_id'   => $ali?->id,
+                'shelter_id'    => $shelter1->id,
+                'category'      => 'other',
+                'description'   => 'Requesting a personal laptop so my children can attend online classes.',
+                'urgency'       => 'low',
+                'status'        => 'rejected',
+                'shelter_notes' => 'Electronics fall outside the aid we can provide. Referred to an education NGO partner.',
+                'reviewed_by'   => $admin1?->id,
+                'reviewed_at'   => Carbon::now()->subDays(6),
+                'created_at'    => Carbon::now()->subDays(9),
+            ],
+            // 13 — shelter 2 — rejected
+            [
+                'civilian_id'   => $civilians2->get(2)?->id,
+                'shelter_id'    => $shelter2->id,
+                'category'      => 'food',
+                'description'   => 'Requesting a second weekly food parcel for relatives visiting my family.',
+                'urgency'       => 'low',
+                'status'        => 'rejected',
+                'shelter_notes' => 'Allocation is one parcel per registered resident. Request declined.',
+                'reviewed_by'   => $admin2?->id,
+                'reviewed_at'   => Carbon::now()->subDays(3),
+                'created_at'    => Carbon::now()->subDays(5),
+            ],
+            // 14 — shelter 3 — fulfilled
+            [
+                'civilian_id'   => $civilians3->get(2)?->id,
+                'shelter_id'    => $shelter3->id,
+                'category'      => 'bedding',
+                'description'   => 'My children need extra blankets — the nights have become very cold.',
+                'urgency'       => 'high',
+                'status'        => 'fulfilled',
+                'shelter_notes' => 'Distributed 3 blankets. Family confirmed receipt.',
+                'reviewed_by'   => $admin3?->id,
+                'reviewed_at'   => Carbon::now()->subDays(8),
+                'created_at'    => Carbon::now()->subDays(12),
+            ],
+            // 15 — shelter 4 — rejected
+            [
+                'civilian_id'   => $civilians4->get(2)?->id,
+                'shelter_id'    => $shelter4->id,
+                'category'      => 'other',
+                'description'   => 'Requesting transportation assistance to relocate to another city.',
+                'urgency'       => 'medium',
+                'status'        => 'rejected',
+                'shelter_notes' => 'Relocation transport is handled by the government logistics unit, not the shelter.',
+                'reviewed_by'   => $admin4?->id,
+                'reviewed_at'   => Carbon::now()->subDays(2),
                 'created_at'    => Carbon::now()->subDays(4),
             ],
         ];
