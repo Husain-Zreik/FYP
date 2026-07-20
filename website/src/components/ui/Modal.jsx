@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import Button from './Button'
+import ModalOverlay from './ModalOverlay'
 
 /*
  * Props:
@@ -19,14 +20,7 @@ export default function Modal({
   width = 'max-w-2xl',
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-text/20 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Dialog */}
+    <ModalOverlay onClose={onClose}>
       <div className={`relative w-full ${width} bg-background rounded-2xl border border-border shadow-2xl flex flex-col`}
         style={{ maxHeight: '90vh' }}>
 
@@ -42,7 +36,7 @@ export default function Modal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
           {children}
         </div>
 
@@ -53,6 +47,6 @@ export default function Modal({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   )
 }

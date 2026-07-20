@@ -1,4 +1,5 @@
 import Button from './Button'
+import ModalOverlay from './ModalOverlay'
 
 export default function ConfirmDialog({
   title,
@@ -10,9 +11,7 @@ export default function ConfirmDialog({
   loading        = false,
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-text/20 backdrop-blur-sm" onClick={!loading ? onCancel : undefined} />
-
+    <ModalOverlay onClose={onCancel} closeOnBackdrop={!loading}>
       <div className="relative z-10 bg-background border border-border rounded-2xl p-6 w-full max-w-sm shadow-xl">
         <h3 className="text-base font-semibold font-heading text-text mb-2">{title}</h3>
         <div className="text-sm text-text-muted mb-6">{message}</div>
@@ -24,6 +23,6 @@ export default function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   )
 }
