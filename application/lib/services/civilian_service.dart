@@ -18,7 +18,7 @@ class CivilianService {
       'document': await MultipartFile.fromFile(filePath, filename: fileName),
     });
     final result = await ApiClient.upload('/users/$userId/upload-id', formData);
-    return result is Map ? result['id_document_url'] as String? : null;
+    return result is Map ? result['url'] as String? : null;
   }
 
   static Future<void> leaveShelter(int userId) async {

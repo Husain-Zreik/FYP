@@ -19,12 +19,12 @@ class _SubmitNeedScreenState extends State<SubmitNeedScreen> {
   bool _loading = false;
 
   static const _categories = [
-    ('food', 'Food'),
-    ('water', 'Water'),
+    ('food', 'Food & Water'),
     ('medical', 'Medical'),
-    ('shelter', 'Shelter'),
     ('clothing', 'Clothing'),
+    ('bedding', 'Bedding'),
     ('hygiene', 'Hygiene'),
+    ('baby_supplies', 'Baby Supplies'),
     ('other', 'Other'),
   ];
 
@@ -32,6 +32,7 @@ class _SubmitNeedScreenState extends State<SubmitNeedScreen> {
     ('low', 'Low'),
     ('medium', 'Medium'),
     ('high', 'High'),
+    ('critical', 'Critical'),
   ];
 
   @override

@@ -98,7 +98,6 @@ const ID_TYPE_OPTS = [
   { value: '',            label: '— Select —'      },
   { value: 'national_id', label: 'National ID'     },
   { value: 'passport',    label: 'Passport'        },
-  { value: 'residency',   label: 'Residency Card'  },
 ]
 
 const PROP_TYPE_OPTS = [

@@ -8,7 +8,7 @@ import { getAidCategories } from '../../api/aidCategories'
 import { useUiStore } from '../../store/uiStore'
 
 const CATEGORY_BADGE = {
-  food_water:   'success',
+  food:         'success',
   medical:      'danger',
   clothing:     'info',
   bedding:      'warning',
@@ -18,7 +18,7 @@ const CATEGORY_BADGE = {
 }
 
 const CATEGORY_LABEL = {
-  food_water:    'Food & Water',
+  food:          'Food & Water',
   medical:       'Medical Care',
   clothing:      'Clothing',
   bedding:       'Bedding',
@@ -33,7 +33,7 @@ const STATUS_LABEL   = { pending: 'Pending', in_review: 'In Review', fulfilled: 
 
 const CATEGORY_OPTS = [
   { value: '',             label: 'All categories'  },
-  { value: 'food_water',   label: 'Food & Water'    },
+  { value: 'food',         label: 'Food & Water'    },
   { value: 'medical',      label: 'Medical Care'    },
   { value: 'clothing',     label: 'Clothing'        },
   { value: 'bedding',      label: 'Bedding'         },
@@ -116,7 +116,7 @@ function ReviewPanel({ need, onClose, onReviewed }) {
     setError(null)
     setSaving(true)
     try {
-      const res = await reviewCivilianNeed(need.id, { status, notes: notes || null })
+      const res = await reviewCivilianNeed(need.id, { status, shelter_notes: notes || null })
       if (sendAid && status === 'fulfilled' && dispatchCat && dispatchQty) {
         const civilianId = need.civilian_id ?? civilian.id
         await createAidDispatch({
