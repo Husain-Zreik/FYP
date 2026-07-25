@@ -93,13 +93,11 @@ export default function ShelterInventoryPage() {
   const totalSent      = sentDispatches.reduce((sum, d) => sum + (d.quantity ?? 0), 0)
   const totalAvailable = totalReceived - totalSent
 
-  const categoryTotals = categories
-    .map(cat => {
-      const received  = receivedDispatches.filter(d => d.category?.id === cat.id).reduce((s, d) => s + (d.quantity ?? 0), 0)
-      const sent       = sentDispatches.filter(d => d.category?.id === cat.id).reduce((s, d) => s + (d.quantity ?? 0), 0)
-      return { category: cat, received, sent, available: received - sent }
-    })
-    .filter(c => c.received > 0 || c.sent > 0)
+  const categoryTotals = categories.map(cat => {
+    const received  = receivedDispatches.filter(d => d.category?.id === cat.id).reduce((s, d) => s + (d.quantity ?? 0), 0)
+    const sent       = sentDispatches.filter(d => d.category?.id === cat.id).reduce((s, d) => s + (d.quantity ?? 0), 0)
+    return { category: cat, received, sent, available: received - sent }
+  })
 
   const activity = [
     ...receivedDispatches.map(d => ({
