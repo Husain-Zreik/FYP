@@ -23,6 +23,7 @@ import ShelterStaffPage         from '../pages/shelter/StaffPage'
 import ShelterRequestsPage      from '../pages/shelter/RequestsPage'
 import ShelterAidRequestsPage   from '../pages/shelter/AidRequestsPage'
 import CivilianNeedsPage        from '../pages/shelter/CivilianNeedsPage'
+import ShelterInventoryPage     from '../pages/shelter/InventoryPage'
 
 // Government aid pages
 import AidInventoryPage         from '../pages/AidInventoryPage'
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
           { path: '/shelter/civilians/:id',element: <ShelterCivilianDetail /> },
           { path: '/shelter/staff',        element: <ShelterStaffPage />         },
           { path: '/shelter/requests',     element: <ShelterRequestsPage />    },
+          { path: '/shelter/inventory',        element: <ShelterInventoryPage />   },
           { path: '/shelter/aid-requests',     element: <ShelterAidRequestsPage /> },
           { path: '/shelter/incoming-aid',     element: <IncomingAidPage />        },
           { path: '/shelter/aid-to-civilians', element: <AidToCiviliansPage />     },

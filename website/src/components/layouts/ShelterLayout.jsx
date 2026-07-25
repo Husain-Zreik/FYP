@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UserCheck, Users, Inbox,
-  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake, ArrowDownToLine, Send,
+  LogOut, Shield, ArrowLeft, Building2, Package, HeartHandshake, ArrowDownToLine, Send, Archive,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useUiStore }   from '../../store/uiStore'
@@ -72,6 +72,7 @@ export default function ShelterLayout({ children, title, subtitle, back, badge, 
       label: 'Aid',
       items: [
         { label: 'Incoming Aid',       path: '/shelter/incoming-aid',     icon: ArrowDownToLine, badge: pendingIncomingAidCount },
+        { label: 'Inventory',          path: '/shelter/inventory',        icon: Archive                                         },
         { label: 'Aid Requests',       path: '/shelter/aid-requests',     icon: Package                                         },
         { label: 'Send to Civilians',  path: '/shelter/aid-to-civilians', icon: Send                                            },
         { label: 'Civilian Needs',     path: '/shelter/civilian-needs',   icon: HeartHandshake,  badge: pendingNeedsCount       },
