@@ -21,6 +21,7 @@ The REST API and single source of truth for the Nuzuh shelter & aid management p
 3. [Enum Reference](#3-enum-reference)
 4. [Seed Data](#4-seed-data)
 5. [Demo Accounts](#5-demo-accounts)
+6. [Deployment & Backups](#6-deployment--backups)
 
 ---
 
@@ -410,3 +411,9 @@ Every seeded account uses the password **`password`**.
 - ~90 additional **civilians** distributed across all shelters (e.g. `fatima.hassan@gmail.com`).
 
 All use the password `password`.
+
+---
+
+## 6. Deployment & Backups
+
+Server deployment (`deploy/deploy.sh`) and the scheduled database backup command (`php artisan backup:database`) are documented in [`deploy/README.md`](deploy/README.md), including cron setup for the scheduler and restore instructions.
