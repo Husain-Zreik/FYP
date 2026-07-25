@@ -18,12 +18,15 @@ class AidRequest extends Model
         'government_notes',
         'reviewed_by',
         'reviewed_at',
+        'received_at',
+        'shelter_received_notes',
     ];
 
     protected function casts(): array
     {
         return [
             'reviewed_at' => 'datetime',
+            'received_at' => 'date',
         ];
     }
 
