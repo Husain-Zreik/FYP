@@ -25,6 +25,15 @@ class UpdateUserRequest extends FormRequest
             'role'       => ['sometimes', 'in:' . implode(',', $allowedRoles)],
             'shelter_id' => ['nullable', 'exists:shelters,id'],
             'is_active'  => ['boolean'],
+
+            'profile'                   => ['sometimes', 'array'],
+            'profile.date_of_birth'     => ['nullable', 'date', 'before:today'],
+            'profile.gender'            => ['nullable', 'in:male,female'],
+            'profile.current_location'  => ['nullable', 'string', 'max:255'],
+            'profile.id_type'           => ['nullable', 'in:national_id,passport'],
+            'profile.id_number'         => ['nullable', 'string', 'max:100'],
+            'profile.notes'             => ['nullable', 'string'],
+            'profile.housing_status'    => ['nullable', 'in:seeking,private'],
         ];
     }
 }

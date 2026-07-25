@@ -54,6 +54,8 @@ class UserController extends Controller
     {
         $auth = $request->user();
 
+        abort_if($auth->role === 'civilian' && $user->id !== $auth->id, 403);
+
         if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) {
             abort(403);
         }
@@ -68,6 +70,7 @@ class UserController extends Controller
     public function uploadIdDocument(Request $request, User $user): JsonResponse
     {
         $auth = $request->user();
+        abort_if($auth->role === 'civilian' && $user->id !== $auth->id, 403);
         if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) abort(403);
 
         $request->validate([
@@ -122,6 +125,8 @@ class UserController extends Controller
     {
         $auth = $request->user();
 
+        abort_if($auth->role === 'civilian' && $user->id !== $auth->id, 403);
+
         if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) {
             abort(403, 'Cannot edit users outside your shelter.');
         }
@@ -129,6 +134,11 @@ class UserController extends Controller
         // Remove password from update if empty
         $data = collect($request->validated())->filter(fn ($v) => $v !== null)->all();
         if (empty($data['password'])) unset($data['password']);
+
+        // Civilians editing themselves cannot change their own role, shelter assignment, or active status
+        if ($auth->role === 'civilian') {
+            unset($data['role'], $data['shelter_id'], $data['is_active']);
+        }
 
         // Capacity check when moving a civilian into a new shelter
         $newShelterId = $data['shelter_id'] ?? null;
@@ -146,7 +156,7 @@ class UserController extends Controller
 
         // Update civilian profile if profile fields are provided
         if ($user->role === 'civilian' && $request->has('profile')) {
-            $profileData = array_filter($request->input('profile', []), fn ($v) => $v !== null && $v !== '');
+            $profileData = array_filter($request->validated('profile', []) ?? [], fn ($v) => $v !== null && $v !== '');
             if (! empty($profileData)) {
                 $user->civilianProfile()->updateOrCreate(['user_id' => $user->id], $profileData);
             }
@@ -254,6 +264,8 @@ class UserController extends Controller
         if ($user->id === $auth->id) {
             return response()->json(['message' => 'Cannot delete your own account.'], 422);
         }
+
+        abort_if($auth->role === 'civilian', 403);
 
         if ($auth->isShelterScoped() && $user->shelter_id !== $auth->shelter_id) {
             abort(403);
