@@ -13,6 +13,7 @@ use App\Http\Controllers\CivilianNeedController;
 use App\Http\Controllers\AidDispatchController;
 use App\Http\Controllers\AidScheduleController;
 use App\Http\Controllers\FamilyMemberController;
+use App\Http\Controllers\AiAssistantController;
 
 // ── Public ────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -87,4 +88,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Family members
     Route::apiResource('family-members', FamilyMemberController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    // AI assistant
+    Route::post('ai-assistant/chat', [AiAssistantController::class, 'chat'])
+        ->middleware('throttle:12,1');
 });

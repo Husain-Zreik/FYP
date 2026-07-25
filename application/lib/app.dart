@@ -19,6 +19,7 @@ import 'models/private_housing.dart';
 import 'screens/aid/submit_need_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/profile/complete_profile_screen.dart';
+import 'screens/assistant/assistant_screen.dart';
 import 'widgets/main_layout.dart';
 import 'screens/not_found_screen.dart';
 
@@ -54,6 +55,12 @@ class _AppState extends State<App> {
       routes: [
         GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+        GoRoute(
+          path: '/assistant',
+          builder: (_, state) => AssistantScreen(
+            initialScreen: state.extra is String ? state.extra as String : null,
+          ),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (_, _, shell) => MainLayout(navigationShell: shell),
           branches: [

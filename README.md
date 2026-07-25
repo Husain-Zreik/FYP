@@ -12,10 +12,11 @@
 4. [User Types & Roles](#4-user-types--roles)
 5. [Core System Flows](#5-core-system-flows)
 6. [How the System Is Used](#6-how-the-system-is-used)
-7. [Getting Started (Step by Step)](#7-getting-started-step-by-step)
-8. [Demo Accounts](#8-demo-accounts)
-9. [Repository Layout](#9-repository-layout)
-10. [API Reference Summary](#10-api-reference-summary)
+7. [AI Assistant](#7-ai-assistant)
+8. [Getting Started (Step by Step)](#8-getting-started-step-by-step)
+9. [Demo Accounts](#9-demo-accounts)
+10. [Repository Layout](#10-repository-layout)
+11. [API Reference Summary](#11-api-reference-summary)
 
 ---
 
@@ -239,7 +240,46 @@ For predictable, repeated distributions, both levels support **schedules** (`Aid
 
 ---
 
-## 7. Getting Started (Step by Step)
+## 7. AI Assistant
+
+Civilians get a built-in chat assistant inside the mobile app — reachable via a floating sparkle button present on every tab, or the Home screen's "Ask Assistant" quick-access tile.
+
+### What it does
+
+The assistant answers questions about *using the platform* — finding and joining a shelter, submitting a need, understanding aid/need statuses, managing a profile — by naming the exact tab and button to tap. Its system prompt encodes a full map of every civilian-facing screen in the mobile app, so it gives concrete navigation, not generic advice. It also knows which tab the user had open when they opened the chat (sent as `context.screen`), so answers can be tailored to what's currently on screen.
+
+It deliberately does **not** have access to a user's actual records (their needs, dispatches, shelter assignment) — it only knows how the app works, and always defers to the relevant in-app screen for real data ("check the Aid tab for your current status" rather than guessing a status).
+
+### How it's powered
+
+- **Google Gemini** (free tier, model `gemini-flash-latest`) — no cost, no credit card required to obtain a key.
+- Request flow: `application/lib/screens/assistant/assistant_screen.dart` → `POST /ai-assistant/chat` → `AiAssistantController` → `GeminiAssistantService` → Gemini's `generateContent` API.
+- No conversation is stored server-side; the mobile app resends the full message history (capped at 20 turns) on every request.
+
+### Security
+
+- **Civilian-only** — the endpoint returns `403` for any other role.
+- **Rate-limited** — 12 requests/minute per authenticated user, to protect the shared free-tier Gemini quota from being exhausted by a single client.
+- **Prompt-injection resistant** — the system prompt refuses to reveal or discuss its own instructions and treats any user attempt to override its role as ordinary chat text, not a command. This was verified live against an actual "ignore all previous instructions" attempt.
+- **No PII solicitation** — instructed to never ask for or repeat back sensitive identifiers (ID numbers, exact addresses) if a user shares them unprompted.
+- **Validated context** — the "current screen" hint is restricted to a fixed enum (`home`/`shelter`/`aid`/`profile`), never free text, so it can't be used to inject arbitrary content into the prompt.
+- Bounded input (max 20 messages, 2000 characters each) and a 20-second upstream timeout; any failure returns a generic error to the client, never the underlying Gemini error.
+
+### Setting it up
+
+1. Get a free API key at **https://aistudio.google.com/apikey** (no credit card required).
+2. Add to `backend/.env`:
+   ```env
+   GEMINI_API_KEY=your-key-here
+   GEMINI_MODEL=gemini-flash-latest
+   ```
+3. Restart `php artisan serve`. `POST /ai-assistant/chat` is now live — log in to the mobile app as a civilian and tap the sparkle button.
+
+Full architecture, request/response contract, and the complete security rationale live in [`backend/README.md`](backend/README.md#7-ai-assistant).
+
+---
+
+## 8. Getting Started (Step by Step)
 
 ### Prerequisites
 
@@ -270,7 +310,13 @@ php artisan key:generate
 # 4. Run migrations and seed demo data (8 shelters, users, aid, etc.)
 php artisan migrate:fresh --seed
 
-# 5. Start the API server  → http://localhost:8000
+# 5. (Optional) Enable the civilian AI assistant — free Gemini API key from
+#    https://aistudio.google.com/apikey, then in .env:
+#    GEMINI_API_KEY=your-key-here
+#    GEMINI_MODEL=gemini-flash-latest
+#    See section 7 (AI Assistant) for details. The app works fine without this.
+
+# 6. Start the API server  → http://localhost:8000
 php artisan serve
 ```
 
@@ -294,7 +340,7 @@ npm install
 npm run dev
 ```
 
-Open **`http://localhost:5173`** and log in with one of the [demo accounts](#8-demo-accounts).
+Open **`http://localhost:5173`** and log in with one of the [demo accounts](#9-demo-accounts).
 
 ---
 
@@ -336,7 +382,7 @@ cd application && flutter pub get && flutter run
 
 ---
 
-## 8. Demo Accounts
+## 9. Demo Accounts
 
 After seeding, these easy-to-remember showcase accounts are available. **The password for every account is `password`.**
 
@@ -354,20 +400,22 @@ Additional realistic accounts exist for the other 7 shelters (e.g. `georges.sfei
 
 ---
 
-## 9. Repository Layout
+## 10. Repository Layout
 
 ```
 /
 ├── backend/            # Laravel 12 REST API — single source of truth
 │   ├── app/
-│   │   ├── Http/Controllers/   # Auth, Users, Shelters, Aid* controllers
+│   │   ├── Http/Controllers/   # Auth, Users, Shelters, Aid*, AiAssistant controllers
 │   │   ├── Http/Requests/      # Form-request validation, grouped by domain
 │   │   ├── Http/Resources/     # JSON response transformers
+│   │   ├── Services/           # GeminiAssistantService (AI assistant)
 │   │   └── Models/             # Eloquent models
 │   ├── config/capabilities.php # Source of truth for staff capabilities
 │   ├── database/
 │   │   ├── migrations/         # One table per migration
 │   │   └── seeders/            # 8 shelters, users, aid batches, dispatches…
+│   ├── deploy/                 # Server deploy script + backup/restore docs
 │   ├── routes/api.php          # All API routes
 │   └── CLAUDE.md               # Backend conventions & detailed docs
 │
@@ -390,7 +438,7 @@ Additional realistic accounts exist for the other 7 shelters (e.g. `georges.sfei
 
 ---
 
-## 10. API Reference Summary
+## 11. API Reference Summary
 
 All routes are prefixed with `/api`. Authenticated routes require `Authorization: Bearer {token}` and `Accept: application/json`.
 

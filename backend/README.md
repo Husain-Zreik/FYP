@@ -22,6 +22,7 @@ The REST API and single source of truth for the Nuzuh shelter & aid management p
 4. [Seed Data](#4-seed-data)
 5. [Demo Accounts](#5-demo-accounts)
 6. [Deployment & Backups](#6-deployment--backups)
+7. [AI Assistant](#7-ai-assistant)
 
 ---
 
@@ -417,3 +418,89 @@ All use the password `password`.
 ## 6. Deployment & Backups
 
 Server deployment (`deploy/deploy.sh`) and the scheduled database backup command (`php artisan backup:database`) are documented in [`deploy/README.md`](deploy/README.md), including cron setup for the scheduler and restore instructions.
+
+---
+
+## 7. AI Assistant
+
+### What it is
+
+A chat assistant embedded in the Flutter mobile app for civilians, backed by Google's **free-tier Gemini API**. It answers questions about using the platform — finding/joining a shelter, submitting a need, understanding aid/need statuses, managing a profile — by naming the exact tab and button to tap. Its system prompt encodes a full map of every civilian-facing screen, so it can genuinely guide a user through the app rather than giving generic advice.
+
+Reachable from the mobile app via a floating sparkle button present on every tab, or the Home screen's "Ask Assistant" quick-access tile.
+
+### Architecture
+
+```
+Flutter app (assistant_screen.dart)
+   │  POST /ai-assistant/chat
+   │  { "messages": [...], "context": { "screen": "home"|"shelter"|"aid"|"profile" } }
+   ▼
+AiAssistantController        — civilian-only (403 otherwise), throttled 12 req/min per user
+   │
+   ▼
+GeminiAssistantService       — builds the system prompt, calls Gemini
+   │  POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+   ▼
+Google Gemini API (free tier)
+```
+
+No conversation is persisted server-side — the client resends the full message history (capped at 20 turns) on every request.
+
+### Setup
+
+1. Get a free API key (no credit card required) at **https://aistudio.google.com/apikey**.
+2. Add it to `backend/.env`:
+   ```env
+   GEMINI_API_KEY=your-key-here
+   GEMINI_MODEL=gemini-flash-latest
+   ```
+3. **Model note:** some Gemini snapshots (e.g. `gemini-2.0-flash`) can return `RESOURCE_EXHAUSTED` with `limit: 0` if that specific snapshot isn't provisioned on your key's free tier. `gemini-flash-latest` is confirmed working against a real key.
+4. Restart `php artisan serve` — `POST /ai-assistant/chat` is now live.
+5. Quick manual test (replace the token with one belonging to a `civilian` user):
+   ```bash
+   curl -X POST http://localhost:8000/api/ai-assistant/chat \
+     -H "Authorization: Bearer {civilian-token}" \
+     -H "Accept: application/json" -H "Content-Type: application/json" \
+     -d '{"messages":[{"role":"user","content":"How do I find a shelter near me?"}]}'
+   ```
+
+### Request / response contract
+
+```json
+// Request
+{
+  "messages": [{ "role": "user", "content": "How do I submit a need?" }],
+  "context": { "screen": "aid" }
+}
+
+// Success — 200
+{ "data": { "reply": "..." }, "message": "OK" }
+
+// Assistant unavailable — 503 (missing key, Gemini error, empty response)
+{ "message": "The assistant is unavailable right now. Please try again later." }
+
+// Rate limited — 429 (Laravel's default throttle body)
+{ "message": "Too Many Attempts." }
+```
+
+### Security measures
+
+| Concern | Mitigation |
+|---------|------------|
+| Wrong audience | Endpoint aborts with `403` for any role other than `civilian`. |
+| Shared free-tier quota abuse | `throttle:12,1` — 12 requests/minute per authenticated user. |
+| Stored PII | No server-side conversation persistence; the client owns the full history. |
+| Prompt injection / jailbreaks | System prompt explicitly refuses to reveal its own instructions and treats in-message attempts to override its role as ordinary text, not commands. Verified live against an "ignore all previous instructions" attempt. |
+| Sensitive data in chat | The assistant is instructed to never solicit or repeat back ID numbers, passwords, or exact addresses. |
+| Injection via context | `context.screen` is restricted to a fixed enum (`home\|shelter\|aid\|profile`) in `AskAssistantRequest` — never raw text — so it can't be used to inject arbitrary prompt content. |
+| Runaway input / cost | Max 20 messages per request, 2000 characters each, 20-second upstream timeout. |
+| Leaking internals | Any Gemini/network failure returns a generic `503`; the real error (which may include Gemini's raw error body) only goes to the server log via `report()`. |
+
+### Where it lives
+
+- `app/Services/GeminiAssistantService.php` — system prompt + Gemini API call
+- `app/Http/Controllers/AiAssistantController.php` — endpoint, role check, error handling
+- `app/Http/Requests/Ai/AskAssistantRequest.php` — input validation
+- `routes/api.php` — `POST /ai-assistant/chat` (throttled, inside the `auth:api` group)
+- Flutter: `application/lib/screens/assistant/assistant_screen.dart`, `application/lib/services/assistant_service.dart`, FAB entry point in `application/lib/widgets/main_layout.dart`

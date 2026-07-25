@@ -9,6 +9,10 @@ class MainLayout extends StatelessWidget {
 
   const MainLayout({super.key, required this.navigationShell});
 
+  // Matches the branch order in app.dart's StatefulShellRoute — tells the
+  // assistant which tab the user was on when they opened it.
+  static const _screenNames = ['home', 'shelter', 'aid', 'profile'];
+
   void _onTap(int index) {
     navigationShell.goBranch(
       index,
@@ -34,7 +38,29 @@ class MainLayout extends StatelessWidget {
           currentIndex: navigationShell.currentIndex,
           onTap: _onTap,
         ),
+        floatingActionButton: _AssistantFab(
+          onPressed: () => context.push(
+            '/assistant',
+            extra: _screenNames[navigationShell.currentIndex],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _AssistantFab extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _AssistantFab({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: onPressed,
+      backgroundColor: AppColors.secondary,
+      foregroundColor: Colors.white,
+      tooltip: 'Ask the Nuzuh Assistant',
+      child: const Icon(Icons.auto_awesome_rounded),
     );
   }
 }

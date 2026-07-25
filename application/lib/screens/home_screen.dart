@@ -1060,6 +1060,13 @@ class _QuickGrid extends StatelessWidget {
         bg: AppColors.surface,
         onTap: () => context.go('/profile'),
       ),
+      _QuickItem(
+        icon: Icons.smart_toy_rounded,
+        label: 'Ask Assistant',
+        color: AppColors.tertiaryForeground,
+        bg: AppColors.tertiary,
+        onTap: () => context.push('/assistant', extra: 'home'),
+      ),
     ];
 
     return GridView.count(
