@@ -99,6 +99,15 @@ class AidDispatchController extends Controller
 
             abort_if(! $civilian, 422, 'Civilian does not belong to your shelter.');
 
+            $availableQty = AidDispatch::availableForShelter($user->shelter_id, $request->aid_category_id);
+
+            if ($request->quantity > $availableQty) {
+                return response()->json([
+                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
+                    'available' => $availableQty,
+                ], 422);
+            }
+
             $dispatch = AidDispatch::create([
                 'level'                 => 'shelter_civilian',
                 'dispatched_by'         => $user->id,

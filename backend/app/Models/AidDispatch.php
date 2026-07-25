@@ -76,4 +76,26 @@ class AidDispatch extends Model
     {
         return $this->belongsTo(User::class, 'responded_by');
     }
+
+    /**
+     * A shelter's stock is derived, not stored: accepted government deliveries
+     * minus everything already sent to civilians (rejected sends don't count,
+     * mirroring how AidBatch refunds on reject at the government level).
+     */
+    public static function availableForShelter(int $shelterId, int $aidCategoryId): int
+    {
+        $received = static::where('shelter_id', $shelterId)
+            ->where('aid_category_id', $aidCategoryId)
+            ->where('level', 'government_shelter')
+            ->where('status', 'accepted')
+            ->sum('quantity');
+
+        $sent = static::where('shelter_id', $shelterId)
+            ->where('aid_category_id', $aidCategoryId)
+            ->where('level', 'shelter_civilian')
+            ->where('status', '!=', 'rejected')
+            ->sum('quantity');
+
+        return max(0, $received - $sent);
+    }
 }

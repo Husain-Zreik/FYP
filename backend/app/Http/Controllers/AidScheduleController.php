@@ -166,6 +166,15 @@ class AidScheduleController extends Controller
                 $batch->decrement('available_quantity', $deduct);
                 $remaining -= $deduct;
             }
+        } elseif ($aidSchedule->level === 'shelter_civilian') {
+            $availableQty = AidDispatch::availableForShelter($aidSchedule->shelter_id, $aidSchedule->aid_category_id);
+
+            if ($aidSchedule->quantity > $availableQty) {
+                return response()->json([
+                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
+                    'available' => $availableQty,
+                ], 422);
+            }
         }
 
         $dispatch = AidDispatch::create([

@@ -394,7 +394,7 @@ function RejectDispatchPanel({ dispatch, onClose, onRejected }) {
   )
 }
 
-function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
+function ScheduleCard({ schedule, onToggle, onDelete, onDispatched, onError }) {
   const category  = schedule.category ?? {}
   const civilian  = schedule.civilian ?? {}
   const freqLabel = FREQ_OPTS.find(f => f.value === schedule.frequency)?.label ?? schedule.frequency
@@ -408,8 +408,8 @@ function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
     try {
       await dispatchSchedule(schedule.id)
       onDispatched(schedule.id)
-    } catch {
-      // silent
+    } catch (err) {
+      onError(err.message ?? 'Failed to send aid.')
     } finally {
       setDispatching(false)
     }
@@ -713,6 +713,7 @@ export default function AidToCiviliansPage() {
                   onToggle={updated => setSchedules(prev => prev.map(x => x.id === updated.id ? updated : x))}
                   onDelete={id => setSchedules(prev => prev.filter(x => x.id !== id))}
                   onDispatched={id => setSchedules(prev => prev.map(x => x.id === id ? { ...x, last_sent_at: new Date().toISOString() } : x))}
+                  onError={setErrorS}
                 />
               ))}
             </div>
