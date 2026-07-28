@@ -34,6 +34,20 @@ class AidRequestResource extends JsonResource
             'received_at'            => $this->received_at?->format('Y-m-d'),
             'shelter_received_notes' => $this->shelter_received_notes,
             'created_at'         => $this->created_at,
+            // Whether a government_shelter dispatch exists that's ready for the
+            // shelter to confirm — drives the "Confirm Receipt" button on the frontend.
+            'can_confirm_receipt' => $this->relationLoaded('dispatches')
+                ? in_array($this->status, ['approved', 'partially_approved'])
+                    && $this->dispatches->contains(fn ($d) => $d->level === 'government_shelter' && $d->status === 'pending')
+                : null,
+            // Sum of non-rejected government_shelter dispatch quantities already sent
+            // against this request — lets the government see how much is left to send.
+            'quantity_dispatched' => $this->relationLoaded('dispatches')
+                ? $this->dispatches
+                    ->where('level', 'government_shelter')
+                    ->where('status', '!=', 'rejected')
+                    ->sum('quantity')
+                : null,
         ];
     }
 }

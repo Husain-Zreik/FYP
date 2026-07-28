@@ -254,7 +254,7 @@ function NewSchedulePanel({ onClose, onCreated }) {
   )
 }
 
-function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
+function ScheduleCard({ schedule, onToggle, onDelete, onDispatched, onError }) {
   const category = schedule.category ?? {}
   const shelter  = schedule.shelter  ?? {}
 
@@ -267,8 +267,8 @@ function ScheduleCard({ schedule, onToggle, onDelete, onDispatched }) {
     try {
       await dispatchSchedule(schedule.id)
       onDispatched(schedule.id)
-    } catch {
-      // silent
+    } catch (err) {
+      onError(err.message ?? 'Failed to send aid.')
     } finally { setDispatching(false) }
   }
 
@@ -583,6 +583,7 @@ export default function AidSendPage() {
                     ? { ...x, last_sent_at: new Date().toISOString().split('T')[0] }
                     : x
                   ))}
+                  onError={setErrorS}
                 />
               ))}
             </div>

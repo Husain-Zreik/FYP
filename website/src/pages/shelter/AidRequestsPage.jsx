@@ -257,11 +257,14 @@ export default function AidRequestsPage() {
       header: '',
       render: (_, req) => {
         if (['approved', 'partially_approved'].includes(req.status)) {
-          return (
-            <Button size="sm" onClick={() => { setReceiptTarget(req); setReceivedAt(today); setNotes('') }}>
-              Confirm Receipt
-            </Button>
-          )
+          if (req.can_confirm_receipt) {
+            return (
+              <Button size="sm" onClick={() => { setReceiptTarget(req); setReceivedAt(today); setNotes('') }}>
+                Confirm Receipt
+              </Button>
+            )
+          }
+          return <span className="text-xs text-text-subtle italic">Awaiting dispatch</span>
         }
         if (req.status === 'pending') {
           return (

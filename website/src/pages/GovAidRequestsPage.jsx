@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Clock, CheckCircle, XCircle, Package, AlertCircle, Check, X, Pencil } from 'lucide-react'
+import { RefreshCw, Clock, CheckCircle, XCircle, Package, AlertCircle, Check, X, Pencil, Send } from 'lucide-react'
 import DashboardLayout from '../components/layouts/DashboardLayout'
 import { Table, Button, Badge, Loader, SlidePanel, StatCard, FilterBar } from '../components/ui'
 import { fmt } from '../utils/format'
 import { getAidRequests, reviewAidRequest } from '../api/aidRequests'
+import { createAidDispatch } from '../api/aidDispatches'
 import { getAidCategories } from '../api/aidCategories'
 import { useUiStore } from '../store/uiStore'
 
@@ -102,6 +103,9 @@ function ReviewPanel({ req, onClose, onReviewed }) {
             {req.quantity_approved != null && (
               <Row label="Approved qty" value={`${req.quantity_approved} ${unit}`} />
             )}
+            {req.quantity_approved != null && (
+              <Row label="Dispatched" value={`${req.quantity_dispatched ?? 0} of ${req.quantity_approved} ${unit}`} />
+            )}
             {req.government_notes && (
               <div className="pt-1">
                 <p className="text-xs text-text-muted mb-1">Notes</p>
@@ -170,6 +174,113 @@ function ReviewPanel({ req, onClose, onReviewed }) {
   )
 }
 
+function DispatchRequestPanel({ req, onClose, onDispatched }) {
+  const unit      = req.category?.unit ?? ''
+  const remaining = (req.quantity_approved ?? 0) - (req.quantity_dispatched ?? 0)
+
+  const [quantity, setQuantity] = useState(String(remaining))
+  const [expectedArrival, setExpectedArrival] = useState('')
+  const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSave() {
+    setError(null)
+    setSaving(true)
+    try {
+      const res = await createAidDispatch({
+        shelter_id: req.shelter_id,
+        aid_category_id: req.aid_category_id,
+        aid_request_id: req.id,
+        quantity: Number(quantity),
+        notes: notes || null,
+        expected_arrival_date: expectedArrival || null,
+      })
+      onDispatched(res.data, Number(quantity))
+      onClose()
+    } catch (err) {
+      setError(err.message ?? 'Failed to dispatch aid.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <SlidePanel
+      title="Dispatch Aid"
+      subtitle={`${req.shelter?.name ?? 'Shelter'} — ${req.category?.name ?? ''}`}
+      onClose={onClose}
+      width="max-w-sm"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            loading={saving}
+            disabled={!quantity || Number(quantity) < 1 || Number(quantity) > remaining}
+            onClick={handleSave}
+          >
+            <Send size={14} /> Dispatch
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="flex gap-2.5 text-sm text-danger bg-danger-surface border border-danger/20 rounded-xl px-4 py-3">
+            <AlertCircle size={15} className="shrink-0 mt-0.5" /> {error}
+          </div>
+        )}
+
+        <div className="bg-surface rounded-2xl p-4 space-y-3">
+          <Row label="Approved qty" value={`${req.quantity_approved} ${unit}`} />
+          <Row label="Already dispatched" value={`${req.quantity_dispatched ?? 0} ${unit}`} />
+          <Row label="Remaining" value={`${remaining} ${unit}`} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-text mb-1.5">
+            Quantity to dispatch {unit && <span className="text-text-subtle font-normal">({unit})</span>}
+          </label>
+          <input
+            type="number"
+            value={quantity}
+            min={1}
+            max={remaining}
+            onChange={e => setQuantity(e.target.value)}
+            className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+          />
+          {Number(quantity) > remaining && (
+            <p className="text-xs text-danger mt-1">Cannot exceed the remaining approved quantity ({remaining} {unit}).</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-text mb-1.5">
+            Expected arrival <span className="text-text-subtle font-normal">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={expectedArrival}
+            onChange={e => setExpectedArrival(e.target.value)}
+            className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background focus:outline-none focus:border-secondary hover:border-border-2 transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-text mb-1.5">Notes</label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Optional notes for the shelter..."
+            rows={3}
+            className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-text bg-background placeholder-text-subtle focus:outline-none focus:border-secondary hover:border-border-2 transition-all resize-none"
+          />
+        </div>
+      </div>
+    </SlidePanel>
+  )
+}
+
 export default function GovAidRequestsPage() {
   const setGovPendingAidCount = useUiStore((s) => s.setGovPendingAidCount)
 
@@ -178,6 +289,7 @@ export default function GovAidRequestsPage() {
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState(null)
   const [selected,      setSelected]      = useState(null)
+  const [dispatchTarget, setDispatchTarget] = useState(null)
   const [search,        setSearch]        = useState('')
   const [catFilter,     setCatFilter]     = useState('')
   const [urgencyFilter, setUrgencyFilter] = useState('')
@@ -205,6 +317,12 @@ export default function GovAidRequestsPage() {
       setGovPendingAidCount(next.filter(r => r.status === 'pending').length)
       return next
     })
+  }
+
+  function handleDispatched(reqId, dispatchedQty) {
+    setRequests(prev => prev.map(r => r.id === reqId
+      ? { ...r, quantity_dispatched: (r.quantity_dispatched ?? 0) + dispatchedQty }
+      : r))
   }
 
   const pending   = requests.filter(r => r.status === 'pending').length
@@ -288,8 +406,16 @@ export default function GovAidRequestsPage() {
       key: 'id',
       header: '',
       render: (_, r) => (
-        <div className="flex justify-end">
-          <Button size="sm" variant="secondary" onClick={() => setSelected(r)}>Review</Button>
+        <div className="flex justify-end gap-1.5">
+          {['approved', 'partially_approved'].includes(r.status)
+            && (r.quantity_approved ?? 0) - (r.quantity_dispatched ?? 0) > 0 && (
+            <Button size="sm" onClick={() => setDispatchTarget(r)}>
+              <Send size={13} /> Dispatch
+            </Button>
+          )}
+          <Button size="sm" variant="secondary" onClick={() => setSelected(r)}>
+            {r.status === 'pending' ? 'Review' : 'View'}
+          </Button>
         </div>
       ),
     },
@@ -341,6 +467,14 @@ export default function GovAidRequestsPage() {
           req={selected}
           onClose={() => setSelected(null)}
           onReviewed={handleReviewed}
+        />
+      )}
+
+      {dispatchTarget && (
+        <DispatchRequestPanel
+          req={dispatchTarget}
+          onClose={() => setDispatchTarget(null)}
+          onDispatched={(_, qty) => { handleDispatched(dispatchTarget.id, qty); setDispatchTarget(null) }}
         />
       )}
     </DashboardLayout>

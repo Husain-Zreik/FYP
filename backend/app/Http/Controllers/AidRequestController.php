@@ -16,7 +16,7 @@ class AidRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user  = $request->user();
-        $query = AidRequest::with(['shelter', 'category', 'reviewer'])
+        $query = AidRequest::with(['shelter', 'category', 'reviewer', 'dispatches'])
             ->orderBy('created_at', 'desc');
 
         if ($user->isShelterScoped()) {
@@ -59,7 +59,7 @@ class AidRequestController extends Controller
             'shelter_id' => $user->shelter_id,
         ]);
 
-        $aidRequest->load('shelter', 'category');
+        $aidRequest->load('shelter', 'category', 'dispatches');
 
         return response()->json([
             'data'    => new AidRequestResource($aidRequest),
@@ -75,7 +75,7 @@ class AidRequestController extends Controller
             abort_if($aidRequest->shelter_id !== $user->shelter_id, 403);
         }
 
-        $aidRequest->load('shelter', 'category', 'reviewer');
+        $aidRequest->load('shelter', 'category', 'reviewer', 'dispatches');
 
         return response()->json([
             'data'    => new AidRequestResource($aidRequest),
@@ -105,7 +105,7 @@ class AidRequestController extends Controller
                 'reviewed_at'      => now(),
             ]);
 
-            $aidRequest->load('shelter', 'category', 'reviewer');
+            $aidRequest->load('shelter', 'category', 'reviewer', 'dispatches');
 
             return response()->json([
                 'data'    => new AidRequestResource($aidRequest),
@@ -122,7 +122,7 @@ class AidRequestController extends Controller
                 'government_notes' => 'Cancelled by shelter',
             ]);
 
-            $aidRequest->load('shelter', 'category', 'reviewer');
+            $aidRequest->load('shelter', 'category', 'reviewer', 'dispatches');
 
             return response()->json([
                 'data'    => new AidRequestResource($aidRequest),
@@ -175,7 +175,7 @@ class AidRequestController extends Controller
             ]);
         });
 
-        $aidRequest->load('shelter', 'category', 'reviewer');
+        $aidRequest->load('shelter', 'category', 'reviewer', 'dispatches');
 
         return response()->json([
             'data'    => new AidRequestResource($aidRequest),

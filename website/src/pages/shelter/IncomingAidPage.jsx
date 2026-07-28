@@ -209,6 +209,11 @@ export default function IncomingAidPage() {
               <CalendarClock size={10} /> Recurring
             </span>
           )}
+          {d.aid_request_id && (
+            <span className="text-[10px] text-text-subtle flex items-center gap-1 mt-0.5">
+              <Package size={10} /> Fulfills your aid request
+            </span>
+          )}
         </div>
       ),
     },
