@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Aid\ReviewAidRequestRequest;
 use App\Http\Requests\Aid\StoreAidRequestRequest;
 use App\Http\Resources\AidRequestResource;
+use App\Models\AidDispatch;
 use App\Models\AidRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AidRequestController extends Controller
 {
@@ -147,11 +149,31 @@ class AidRequestController extends Controller
             'shelter_received_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $aidRequest->update([
-            'status'                 => 'fulfilled',
-            'received_at'            => $request->received_at,
-            'shelter_received_notes' => $request->shelter_received_notes,
-        ]);
+        $dispatch = AidDispatch::where('aid_request_id', $aidRequest->id)
+            ->where('level', 'government_shelter')
+            ->where('status', 'pending')
+            ->first();
+
+        abort_if(
+            ! $dispatch,
+            422,
+            'The government has not dispatched this aid yet. It will appear on the Incoming Aid page once sent.'
+        );
+
+        DB::transaction(function () use ($request, $aidRequest, $dispatch) {
+            $dispatch->update([
+                'status'       => 'accepted',
+                'responded_at' => now(),
+                'received_at'  => $request->received_at,
+                'responded_by' => $request->user()->id,
+            ]);
+
+            $aidRequest->update([
+                'status'                 => 'fulfilled',
+                'received_at'            => $request->received_at,
+                'shelter_received_notes' => $request->shelter_received_notes,
+            ]);
+        });
 
         $aidRequest->load('shelter', 'category', 'reviewer');
 

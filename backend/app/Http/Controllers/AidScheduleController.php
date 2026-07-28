@@ -6,11 +6,13 @@ use App\Http\Requests\Aid\StoreAidScheduleRequest;
 use App\Http\Requests\Aid\UpdateAidScheduleRequest;
 use App\Http\Resources\AidDispatchResource;
 use App\Http\Resources\AidScheduleResource;
+use App\Models\AidBatch;
 use App\Models\AidDispatch;
 use App\Models\AidSchedule;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AidScheduleController extends Controller
 {
@@ -143,55 +145,43 @@ class AidScheduleController extends Controller
         $this->authorizeAccess($user, $aidSchedule);
         abort_if(! $aidSchedule->is_active, 422, 'This schedule is not active.');
 
-        if ($aidSchedule->level === 'government_shelter') {
-            $availableQty = \App\Models\AidBatch::where('aid_category_id', $aidSchedule->aid_category_id)
-                ->sum('available_quantity');
-
-            if ($aidSchedule->quantity > $availableQty) {
-                return response()->json([
-                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
-                    'available' => $availableQty,
-                ], 422);
+        $outcome = DB::transaction(function () use ($user, $aidSchedule) {
+            if ($aidSchedule->level === 'government_shelter') {
+                $result = AidBatch::deductFifo($aidSchedule->aid_category_id, $aidSchedule->quantity);
+            } else {
+                $result = AidDispatch::reserveForShelter($aidSchedule->shelter_id, $aidSchedule->aid_category_id, $aidSchedule->quantity);
             }
 
-            $remaining = $aidSchedule->quantity;
-            $batches = \App\Models\AidBatch::where('aid_category_id', $aidSchedule->aid_category_id)
-                ->where('available_quantity', '>', 0)
-                ->orderBy('received_at')
-                ->get();
-
-            foreach ($batches as $batch) {
-                if ($remaining <= 0) break;
-                $deduct = min($remaining, $batch->available_quantity);
-                $batch->decrement('available_quantity', $deduct);
-                $remaining -= $deduct;
+            if ($result !== true) {
+                return ['available' => $result];
             }
-        } elseif ($aidSchedule->level === 'shelter_civilian') {
-            $availableQty = AidDispatch::availableForShelter($aidSchedule->shelter_id, $aidSchedule->aid_category_id);
 
-            if ($aidSchedule->quantity > $availableQty) {
-                return response()->json([
-                    'message'   => "Insufficient stock. Only {$availableQty} units available for this category.",
-                    'available' => $availableQty,
-                ], 422);
-            }
+            $dispatch = AidDispatch::create([
+                'level'           => $aidSchedule->level,
+                'dispatched_by'   => $user->id,
+                'shelter_id'      => $aidSchedule->shelter_id,
+                'civilian_id'     => $aidSchedule->civilian_id,
+                'aid_category_id' => $aidSchedule->aid_category_id,
+                'quantity'        => $aidSchedule->quantity,
+                'notes'           => $aidSchedule->notes,
+                'aid_schedule_id' => $aidSchedule->id,
+                'status'          => 'pending',
+                'dispatched_at'   => now(),
+            ]);
+
+            $aidSchedule->update(['last_sent_at' => today()]);
+
+            return ['dispatch' => $dispatch];
+        });
+
+        if (isset($outcome['available'])) {
+            return response()->json([
+                'message'   => "Insufficient stock. Only {$outcome['available']} units available for this category.",
+                'available' => $outcome['available'],
+            ], 422);
         }
 
-        $dispatch = AidDispatch::create([
-            'level'           => $aidSchedule->level,
-            'dispatched_by'   => $user->id,
-            'shelter_id'      => $aidSchedule->shelter_id,
-            'civilian_id'     => $aidSchedule->civilian_id,
-            'aid_category_id' => $aidSchedule->aid_category_id,
-            'quantity'        => $aidSchedule->quantity,
-            'notes'           => $aidSchedule->notes,
-            'aid_schedule_id' => $aidSchedule->id,
-            'status'          => 'pending',
-            'dispatched_at'   => now(),
-        ]);
-
-        $aidSchedule->update(['last_sent_at' => today()]);
-
+        $dispatch = $outcome['dispatch'];
         $dispatch->load('shelter', 'civilian', 'category', 'dispatcher');
 
         return response()->json([

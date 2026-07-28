@@ -98,4 +98,25 @@ class AidDispatch extends Model
 
         return max(0, $received - $sent);
     }
+
+    /**
+     * Checks a shelter's derived stock for a category, locking the shelter row for
+     * the caller's transaction so concurrent shelter->civilian dispatches can't both
+     * pass the check against the same unlocked read (there's no physical batch row
+     * to lock for derived stock, so the shelter row stands in as the lock target).
+     *
+     * Returns true on success, or the actual available quantity (< $quantity) on failure.
+     */
+    public static function reserveForShelter(int $shelterId, int $aidCategoryId, int $quantity): int|true
+    {
+        Shelter::where('id', $shelterId)->lockForUpdate()->first();
+
+        $availableQty = static::availableForShelter($shelterId, $aidCategoryId);
+
+        if ($quantity > $availableQty) {
+            return $availableQty;
+        }
+
+        return true;
+    }
 }

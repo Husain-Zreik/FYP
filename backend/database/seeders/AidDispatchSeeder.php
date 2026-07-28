@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\AidCategory;
 use App\Models\AidDispatch;
+use App\Models\AidRequest;
 use App\Models\Shelter;
 use App\Models\User;
 use Carbon\Carbon;
@@ -38,6 +39,16 @@ class AidDispatchSeeder extends Seeder
         $catBlanket = AidCategory::where('name', 'Blankets')->first();
         $catHygiene = AidCategory::where('name', 'Hygiene Kits')->first();
         $catBaby    = AidCategory::where('name', 'Baby Supplies')->first();
+        $catMattress = AidCategory::where('name', 'Mattresses')->first();
+
+        // Every approved/partially_approved/fulfilled AidRequest needs a matching
+        // government_shelter AidDispatch linked via aid_request_id — the shelter can
+        // only confirm receipt of a request once the government has actually dispatched it.
+        $reqMattressShelter1 = AidRequest::where('shelter_id', $shelter1->id)->where('aid_category_id', $catMattress->id)->where('status', 'approved')->first();
+        $reqHygieneShelter2  = AidRequest::where('shelter_id', $shelter2->id)->where('aid_category_id', $catHygiene->id)->where('status', 'partially_approved')->first();
+        $reqFoodShelter3     = AidRequest::where('shelter_id', $shelter3->id)->where('aid_category_id', $catFood->id)->where('status', 'fulfilled')->first();
+        $reqBlanketShelter1  = AidRequest::where('shelter_id', $shelter1->id)->where('aid_category_id', $catBlanket->id)->where('status', 'partially_approved')->first();
+        $reqHygieneShelter1  = AidRequest::where('shelter_id', $shelter1->id)->where('aid_category_id', $catHygiene->id)->where('status', 'fulfilled')->first();
 
         $dispatches = [
             // 1 — gov → shelter 1, Food Parcels, accepted
@@ -209,6 +220,96 @@ class AidDispatchSeeder extends Seeder
                 'received_at'          => null,
                 'responded_by'         => $ali?->id,
                 'rejection_reason'     => 'Already received a first-aid kit this month from a visiting clinic.',
+            ],
+            // 11 — gov → shelter 1, Mattresses, pending (linked to approved AidRequest #4)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter1->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catMattress->id,
+                'aid_request_id'       => $reqMattressShelter1?->id,
+                'quantity'             => 15,
+                'notes'                => 'Mattresses will be dispatched from current inventory within 3 days.',
+                'status'               => 'pending',
+                'dispatched_at'        => Carbon::now()->subDays(1),
+                'expected_arrival_date'=> Carbon::now()->addDays(2)->toDateString(),
+                'responded_at'         => null,
+                'received_at'          => null,
+                'responded_by'         => null,
+                'rejection_reason'     => null,
+            ],
+            // 12 — gov → shelter 2, Hygiene Kits, pending (linked to partially_approved AidRequest #5)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter2->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catHygiene->id,
+                'aid_request_id'       => $reqHygieneShelter2?->id,
+                'quantity'             => 45,
+                'notes'                => '45 kits dispatched immediately, remainder to follow next shipment.',
+                'status'               => 'pending',
+                'dispatched_at'        => Carbon::now()->subDays(3),
+                'expected_arrival_date'=> Carbon::now()->addDays(1)->toDateString(),
+                'responded_at'         => null,
+                'received_at'          => null,
+                'responded_by'         => null,
+                'rejection_reason'     => null,
+            ],
+            // 13 — gov → shelter 3, Food Parcels, accepted (linked to fulfilled AidRequest #7)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter3->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catFood->id,
+                'aid_request_id'       => $reqFoodShelter3?->id,
+                'quantity'             => 30,
+                'notes'                => 'Weekly food parcel distribution for elderly occupants.',
+                'status'               => 'accepted',
+                'dispatched_at'        => Carbon::now()->subWeeks(2)->subDays(5),
+                'expected_arrival_date'=> Carbon::now()->subWeeks(2)->subDays(2)->toDateString(),
+                'responded_at'         => Carbon::now()->subWeeks(2),
+                'received_at'          => Carbon::now()->subWeeks(2)->toDateString(),
+                'responded_by'         => $admin3?->id,
+                'rejection_reason'     => null,
+            ],
+            // 14 — gov → shelter 1, Blankets, pending (linked to partially_approved AidRequest #10)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter1->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catBlanket->id,
+                'aid_request_id'       => $reqBlanketShelter1?->id,
+                'quantity'             => 40,
+                'notes'                => '40 blankets dispatched now, remainder to follow next shipment.',
+                'status'               => 'pending',
+                'dispatched_at'        => Carbon::now()->subDays(2),
+                'expected_arrival_date'=> Carbon::now()->addDays(3)->toDateString(),
+                'responded_at'         => null,
+                'received_at'          => null,
+                'responded_by'         => null,
+                'rejection_reason'     => null,
+            ],
+            // 15 — gov → shelter 1, Hygiene Kits, accepted (linked to fulfilled AidRequest #12)
+            [
+                'level'                => 'government_shelter',
+                'dispatched_by'        => $govAdmin->id,
+                'shelter_id'           => $shelter1->id,
+                'civilian_id'          => null,
+                'aid_category_id'      => $catHygiene->id,
+                'aid_request_id'       => $reqHygieneShelter1?->id,
+                'quantity'             => 30,
+                'notes'                => 'Monthly hygiene kit distribution for all families in the shelter.',
+                'status'               => 'accepted',
+                'dispatched_at'        => Carbon::now()->subWeeks(2)->subDays(5),
+                'expected_arrival_date'=> Carbon::now()->subWeeks(2)->subDays(2)->toDateString(),
+                'responded_at'         => Carbon::now()->subWeeks(2),
+                'received_at'          => Carbon::now()->subWeeks(2)->toDateString(),
+                'responded_by'         => $shelterAdmin1?->id,
+                'rejection_reason'     => null,
             ],
         ];
 
